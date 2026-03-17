@@ -1,8 +1,12 @@
-﻿namespace CareNota.Models
+﻿namespace CareNota.Models;
+
+public class VisitDiagnosis
 {
-    public class VisitDiagnosis
-    {
-        public int VisitID { get; set; } // Composite Key
-        public string ICD10Code { get; set; } // Composite Key
-    }
+    // Composite PK (configured in DbContext)
+    public int VisitID { get; set; }
+    public string ICD10Code { get; set; } = string.Empty;
+
+    // Navigation
+    public Visit Visit { get; set; } = null!;
+    public Diagnosis Diagnosis { get; set; } = null!;
 }

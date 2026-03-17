@@ -1,13 +1,15 @@
-﻿namespace CareNota.Models
+﻿namespace CareNota.Models;
+
+public class AISummary
 {
-    public class AISummary
-    {
-        public int AISummaryID { get; set; }
-        public string SummaryText { get; set; }
-        public string SummaryType { get; set; }
+    public int AISummaryID { get; set; }
+    public string SummaryText { get; set; } = string.Empty;
+    public string SummaryType { get; set; } = string.Empty;
+    public float DoctorRating { get; set; }
 
-        public float DoctorRating { get; set; }
+    // FK
+    public int VisitID { get; set; }
 
-        public int VisitID { get; set; } // Foreign key to Visit
-    }
+    // Navigation
+    public Visit Visit { get; set; } = null!;
 }

@@ -1,12 +1,15 @@
-﻿namespace CareNota.Models
+﻿namespace CareNota.Models;
+
+public class Prescription
 {
-    public class Prescription
-    {
-        public int PrescriptionID { get; set; }
-        public DateTime Date { get; set; }
+    public int PrescriptionID { get; set; }
+    public string Instructions { get; set; } = string.Empty;
 
-        public string Instructions { get; set; }
+    // FK
+    public int VisitID { get; set; }
 
-        public int VisitID { get; set; } // Foreign key to Visit
-    }
+    // Navigation
+    public Visit Visit { get; set; } = null!;
+    public ICollection<PrescriptionMedication> PrescriptionMedications { get; set; } = [];
+    public ICollection<Reminder> Reminders { get; set; } = [];
 }

@@ -8,9 +8,9 @@ namespace CareNota.Controllers
     [ApiController]
     public class PatientsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ApplicationDbContext _context;
 
-        public PatientsController(AppDbContext context)
+        public PatientsController(ApplicationDbContext context)
         {
             _context = context;
         }
