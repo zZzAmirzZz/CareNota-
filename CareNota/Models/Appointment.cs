@@ -11,6 +11,7 @@ public class Appointment
     // FKs
     public int PatientID { get; set; }
     public int ReceptionistID { get; set; }
+    public int DoctorID { get; set; }
 
     // Navigation
     public Patient Patient { get; set; } = null!;

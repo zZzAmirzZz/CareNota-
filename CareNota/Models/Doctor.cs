@@ -2,6 +2,7 @@
 
 public class Doctor
 {
+    public string DoctorName { get; set; } = string.Empty;
     public int DoctorID { get; set; }
     public string Specialty { get; set; } = string.Empty;
 

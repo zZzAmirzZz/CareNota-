@@ -13,6 +13,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Doctor> Doctors { get; set; }
     public DbSet<Patient> Patients { get; set; }
     public DbSet<Receptionist> Receptionists { get; set; }
+    public DbSet<AudioRecord> AudioRecords { get; set; }
     public DbSet<MedicalHistory> MedicalHistories { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Visit> Visits { get; set; }
@@ -20,7 +21,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PrescriptionMedication> PrescriptionMedications { get; set; }
     public DbSet<Medication> Medications { get; set; }
     public DbSet<LabTest> LabTests { get; set; }
-    public DbSet<AudioRecord> AudioRecords { get; set; }
+    
     public DbSet<AISummary> AISummaries { get; set; }
     public DbSet<Diagnosis> Diagnoses { get; set; }
     public DbSet<VisitDiagnosis> VisitDiagnoses { get; set; }
