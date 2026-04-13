@@ -1,7 +1,10 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class AISummary
 {
+    [Key]
     public int AISummaryID { get; set; }
     public string SummaryText { get; set; } = string.Empty;
     public string SummaryType { get; set; } = string.Empty;

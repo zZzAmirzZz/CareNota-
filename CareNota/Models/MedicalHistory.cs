@@ -1,7 +1,10 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class MedicalHistory
 {
+    [Key]
     public int MedicalHistoryId { get; set; }
     public string ChiefComplaint { get; set; } = string.Empty;
     public string PresentIllness { get; set; } = string.Empty;

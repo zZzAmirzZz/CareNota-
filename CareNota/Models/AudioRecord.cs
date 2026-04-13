@@ -2,7 +2,7 @@
 
 public class AudioRecord
 {
-    public int AudioRecordID { get; set; }
+    public int AudioID { get; set; }
     public string AudioFileURL { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime DeletionAt { get; set; }

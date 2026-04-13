@@ -1,8 +1,11 @@
-
 using CareNota.Data;
 using CareNota.Models;
+using CareNota.Repositories;
+using CareNota.Repositories.Interfaces;
 using CareNota.Services;
+using CareNota.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,7 +15,9 @@ var Builder = WebApplication.CreateBuilder(args);
 
 // ── Database ──────────────────────────────────────────────────────────────────
 Builder.Services.AddDbContext<ApplicationDbContext>(Options =>
-    Options.UseSqlServer(Builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions => sqlOptions.EnableRetryOnFailure(
+    Options.UseSqlServer(
+        Builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(10),
             errorNumbersToAdd: null)));
@@ -55,32 +60,40 @@ Builder.Services.AddAuthentication(Options =>
 
 Builder.Services.AddAuthorization();
 
-// ── Services ──────────────────────────────────────────────────────────────────
-Builder.Services.AddScoped<IAuthService, AuthService>();
+// ── Controllers + Swagger ─────────────────────────────────────────────────────
 Builder.Services.AddControllers();
 Builder.Services.AddEndpointsApiExplorer();
 Builder.Services.AddSwaggerGen();
-Builder.Services.AddScoped<IRepository<Patient>, GenericRepository<Patient>>();
-Builder.Services.AddScoped<IRepository<Doctor>, GenericRepository<Doctor>>();
-Builder.Services.AddScoped<IRepository<Appointment>, GenericRepository<Appointment>>();
-Builder.Services.AddScoped<IPatientService, PatientService>();
-Builder.Services.AddScoped<IPatientRepository, PatientRepository>();
-Builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
-Builder.Services.AddScoped<IDoctorService, DoctorService>();
-Builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
-Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-Builder.Services.AddAutoMapper(typeof(Program));
 
+// ── Repositories ──────────────────────────────────────────────────────────────
+Builder.Services.AddScoped<IVisitRepository, VisitRepository>();
+Builder.Services.AddScoped<IDiagnosisRepository, DiagnosisRepository>();
+Builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
+Builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
+Builder.Services.AddScoped<ILabTestRepository, LabTestRepository>();
+
+// ── Services ──────────────────────────────────────────────────────────────────
+Builder.Services.AddScoped<IVisitService, VisitService>();
+Builder.Services.AddScoped<IDiagnosisService, DiagnosisService>();
+Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
+Builder.Services.AddScoped<IMedicationService, MedicationService>();
+Builder.Services.AddScoped<ILabTestService, LabTestService>();
+
+// ── File Upload Config ────────────────────────────────────────────────────────
+Builder.Services.Configure<FormOptions>(Options =>
+{
+    Options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB
+});
+
+// ── Build App ─────────────────────────────────────────────────────────────────
 var App = Builder.Build();
 
-// ── Role Seeding ──────────────────────────────────────────────────────────────
+// ── Role Seeding + Migrations ─────────────────────────────────────────────────
 using (var Scope = App.Services.CreateScope())
 {
-    // Step 1 — make sure DB exists and all migrations are applied
     var Db = Scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    Db.Database.Migrate(); // ← THIS is what was missing
+    Db.Database.Migrate();
 
-    // Step 2 — then seed roles
     var RoleManager = Scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await RoleSeeder.SeedRolesAsync(RoleManager);
 }
@@ -93,7 +106,10 @@ if (App.Environment.IsDevelopment())
 }
 
 App.UseHttpsRedirection();
-App.UseAuthentication(); // ← must be before Authorization
+
+App.UseAuthentication(); // لازم قبل Authorization
 App.UseAuthorization();
+
 App.MapControllers();
+
 App.Run();

@@ -1,6 +1,6 @@
-﻿using CareNota.DTOs;
+﻿using CareNota.DTOs.Auth;
 
-namespace CareNota.Services;
+namespace CareNota.Services.Interfaces;
 
 public interface IAuthService
 {

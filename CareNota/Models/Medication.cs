@@ -1,7 +1,10 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class Medication
 {
+    [Key]
     public int MedicationID { get; set; }
     public string MedicationName { get; set; } = string.Empty;
     public string MedicationType { get; set; } = string.Empty;

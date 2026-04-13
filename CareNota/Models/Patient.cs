@@ -1,7 +1,12 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class Patient
+
+
 {
+    [Key]
     public int PatientID { get; set; }
     public string Gender { get; set; } = string.Empty;
     public DateTime DateOfBirth { get; set; }

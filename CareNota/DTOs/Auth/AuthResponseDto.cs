@@ -1,4 +1,4 @@
-﻿namespace CareNota.DTOs;
+﻿namespace CareNota.DTOs.Auth;
 
 public class AuthResponseDto
 {

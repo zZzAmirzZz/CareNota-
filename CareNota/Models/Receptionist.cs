@@ -1,7 +1,11 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class Receptionist
 {
+
+    [Key]
     public int ReceptionistID { get; set; }
 
     // FK → ApplicationUser (string GUID)

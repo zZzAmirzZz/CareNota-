@@ -1,8 +1,11 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class PrescriptionMedication
 {
     // Composite PK (configured in DbContext)
+    [Key]
     public int PrescriptionID { get; set; }
     public int MedicationID { get; set; }
 

@@ -1,7 +1,10 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class Reminder
 {
+    [Key]
     public int ReminderID { get; set; }
     public string Message { get; set; } = string.Empty;
     public string ReminderType { get; set; } = string.Empty;

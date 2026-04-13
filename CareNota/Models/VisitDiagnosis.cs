@@ -1,8 +1,11 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class VisitDiagnosis
 {
     // Composite PK (configured in DbContext)
+    [Key]
     public int VisitID { get; set; }
     public string ICD10Code { get; set; } = string.Empty;
 

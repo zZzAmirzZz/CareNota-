@@ -1,7 +1,10 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class Visit
 {
+    [Key]
     public int VisitID { get; set; }
     public DateTime VisitDate { get; set; }
     public string Subjective { get; set; } = string.Empty;

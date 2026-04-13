@@ -1,5 +1,6 @@
 ﻿using CareNota.Data;
 using CareNota.Models;
+using CareNota.Repositories;
 
 public class DoctorRepository : GenericRepository<Doctor>, IDoctorRepository
 {

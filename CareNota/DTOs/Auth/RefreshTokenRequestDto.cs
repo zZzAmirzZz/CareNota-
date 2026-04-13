@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CareNota.DTOs;
+namespace CareNota.DTOs.Auth;
 
 public class RefreshTokenRequestDto
 {

@@ -1,6 +1,7 @@
-﻿using CareNota.Models;
-using CareNota.Data;
-
+﻿using CareNota.Data;
+using CareNota.Models;
+using CareNota.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 public class PatientRepository : GenericRepository<Patient>, IPatientRepository
 {
@@ -10,6 +11,8 @@ public class PatientRepository : GenericRepository<Patient>, IPatientRepository
 
     public List<Patient> GetPatientsByGender(string gender)
     {
-        return _context.Patients.Where(p => p.Gender == gender).ToList();
+        return Context.Patients
+            .Where(p => p.Gender == gender)
+            .ToList();
     }
 }

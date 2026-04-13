@@ -1,5 +1,6 @@
 ﻿using CareNota.Models;
 using CareNota.Data;
+using CareNota.Repositories;
 public class AppointmentRepository : GenericRepository<Appointment>, IAppointmentRepository
 {
     private readonly ApplicationDbContext _context;
