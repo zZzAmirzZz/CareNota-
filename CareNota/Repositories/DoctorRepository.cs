@@ -1,6 +1,7 @@
 ﻿using CareNota.Data;
 using CareNota.Models;
 using CareNota.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 public class DoctorRepository : GenericRepository<Doctor>, IDoctorRepository
 {
@@ -10,11 +11,16 @@ public class DoctorRepository : GenericRepository<Doctor>, IDoctorRepository
     {
         _context = context;
     }
-
-    public List<Doctor> GetDoctorsBySpecialty(string specialty)
+    public async Task<Doctor?> GetByUserIdAsync(string userId)
     {
-        return _context.Doctors
-                       .Where(d => d.Specialty == specialty)
-                       .ToList();
+        return await _context.Doctors
+                             .FirstOrDefaultAsync(d => d.UserId == userId);
     }
+    public async Task<IEnumerable<Doctor>> GetBySpecialtyAsync(string specialty)
+    {
+        return await _context.Doctors
+                             .Where(d => d.Specialty == specialty)
+                             .ToListAsync();
+    }
+
 }

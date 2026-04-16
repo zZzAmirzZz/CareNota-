@@ -1,9 +1,10 @@
 ﻿using CareNota.Models;
-using CareNota.Data;
-using Microsoft.EntityFrameworkCore;
 
 public interface IDoctorRepository : IRepository<Doctor>
 {
-    List<Doctor> GetDoctorsBySpecialty(string specialty);
-}
+    // Get doctor row by the linked ApplicationUser ID (string GUID)
+    Task<Doctor?> GetByUserIdAsync(string UserId);
 
+    // Filter doctors by specialty keyword (partial match)
+    Task<IEnumerable<Doctor>> GetBySpecialtyAsync(string Specialty);
+}

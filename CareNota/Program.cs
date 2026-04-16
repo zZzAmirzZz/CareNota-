@@ -4,6 +4,9 @@ using CareNota.Repositories;
 using CareNota.Repositories.Interfaces;
 using CareNota.Services;
 using CareNota.Services.Interfaces;
+using CareNota.Validators.Appointment;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
@@ -71,6 +74,7 @@ Builder.Services.AddScoped<IDiagnosisRepository, DiagnosisRepository>();
 Builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
 Builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
 Builder.Services.AddScoped<ILabTestRepository, LabTestRepository>();
+Builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 
 // ── Services ──────────────────────────────────────────────────────────────────
 Builder.Services.AddScoped<IVisitService, VisitService>();
@@ -79,6 +83,9 @@ Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
 
+// ── FluentValidation ───────────────────────────────────────────────────────────
+Builder.Services.AddFluentValidationAutoValidation();
+Builder.Services.AddValidatorsFromAssemblyContaining<CreateAppointmentValidator>();
 // ── File Upload Config ────────────────────────────────────────────────────────
 Builder.Services.Configure<FormOptions>(Options =>
 {

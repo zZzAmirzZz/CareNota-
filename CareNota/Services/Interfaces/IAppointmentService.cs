@@ -1,11 +1,28 @@
-﻿using CareNota.Models;
+﻿using CareNota.DTOs.Appointment;
 
 public interface IAppointmentService
 {
-    List<Appointment> GetAll();
-    Appointment GetById(int id);
-    void Add(Appointment appointment);
-    void Update(Appointment appointment);
-    void Delete(int id);
-    List<Appointment> GetAppointmentsByDate(DateTime date);
+    Task<IEnumerable<AppointmentDto>> GetAllAsync();
+
+    Task<AppointmentDto?> GetByIdAsync(int AppointmentId);
+
+    // Full graph including Visit summary
+    Task<AppointmentDetailDto?> GetDetailsAsync(int AppointmentId);
+
+    Task<IEnumerable<AppointmentDto>> GetByPatientIdAsync(int PatientId);
+
+    Task<IEnumerable<AppointmentDto>> GetByDateRangeAsync(DateTime From, DateTime To);
+
+    Task<IEnumerable<AppointmentDto>> GetByStatusAsync(string Status);
+
+    // Creates with Status = "Scheduled"; validates patient exists + no same-day conflict
+    Task<AppointmentDto> CreateAsync(CreateAppointmentDto Dto);
+
+    // Can reschedule date/type and change status
+    Task<AppointmentDto> UpdateAsync(int AppointmentId, UpdateAppointmentDto Dto);
+
+    // Sets Status = "Cancelled" without deleting the row
+    Task CancelAsync(int AppointmentId);
+
+    Task DeleteAsync(int AppointmentId);
 }
