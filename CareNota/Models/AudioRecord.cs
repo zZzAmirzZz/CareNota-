@@ -1,7 +1,10 @@
-﻿namespace CareNota.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CareNota.Models;
 
 public class AudioRecord
 {
+    [Key]
     public int AudioID { get; set; }
     public string AudioFileURL { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

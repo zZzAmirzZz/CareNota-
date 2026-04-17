@@ -91,7 +91,7 @@ Builder.Services.Configure<FormOptions>(Options =>
 {
     Options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB
 });
-
+Builder.Services.AddAutoMapper(typeof(Program));
 // ── Build App ─────────────────────────────────────────────────────────────────
 var App = Builder.Build();
 

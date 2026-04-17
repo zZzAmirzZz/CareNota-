@@ -33,7 +33,7 @@ public class PatientRepository : GenericRepository<Patient>, IPatientRepository
     public async Task<IEnumerable<Patient>> SearchByNameAsync(string Name)
         => await DbSet
             .Include(P => P.User)
-            .Where(P => (P.User.FirstName + " " + P.User.LastName)
+            .Where(P => (P.User.FullName)
                 .ToLower().Contains(Name.ToLower()))
             .AsNoTracking()
             .ToListAsync();
