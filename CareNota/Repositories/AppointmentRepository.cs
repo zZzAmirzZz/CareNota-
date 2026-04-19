@@ -3,6 +3,7 @@ using CareNota.Models;
 using CareNota.Repositories;
 using Microsoft.EntityFrameworkCore;
 
+
 public class AppointmentRepository : GenericRepository<Appointment>, IAppointmentRepository
 {
     public AppointmentRepository(ApplicationDbContext Context) : base(Context) { }

@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+//using Microsoft.OpenApi.Models;
 using System.Text;
 
 var Builder = WebApplication.CreateBuilder(args);
@@ -61,12 +63,39 @@ Builder.Services.AddAuthentication(Options =>
     };
 });
 
-Builder.Services.AddAuthorization();
 
+//Builder.Services.AddSwaggerGen(options =>
+//{
+//    options.SwaggerDoc("v1", new OpenApiInfo { Title = "CareNota API", Version = "v1" });
+
+//    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+//    {
+//        Name = "Authorization",
+//        Type = SecuritySchemeType.ApiKey,
+//        Scheme = "Bearer",
+//        BearerFormat = "JWT",
+//        In = ParameterLocation.Header,
+//        Description = "Enter: Bearer {your token}"
+//    });
+
+//    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+//    {
+//        {
+//            new OpenApiSecurityScheme
+//            {
+//                Reference = new OpenApiReference
+//                {
+//                    Type = ReferenceType.SecurityScheme,
+//                    Id = "Bearer"
+//                }
+//            },
+//            Array.Empty<string>()
+//        }
+//    });
+//});
 // ── Controllers + Swagger ─────────────────────────────────────────────────────
 Builder.Services.AddControllers();
 Builder.Services.AddEndpointsApiExplorer();
-Builder.Services.AddSwaggerGen();
 
 // ── Repositories ──────────────────────────────────────────────────────────────
 Builder.Services.AddScoped<IVisitRepository, VisitRepository>();
@@ -77,6 +106,7 @@ Builder.Services.AddScoped<ILabTestRepository, LabTestRepository>();
 Builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 
 // ── Services ──────────────────────────────────────────────────────────────────
+Builder.Services.AddScoped<IAuthService, AuthService>();
 Builder.Services.AddScoped<IVisitService, VisitService>();
 Builder.Services.AddScoped<IDiagnosisService, DiagnosisService>();
 Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
@@ -114,8 +144,9 @@ if (App.Environment.IsDevelopment())
 
 App.UseHttpsRedirection();
 
-App.UseAuthentication(); // لازم قبل Authorization
-App.UseAuthorization();
+//App.UseAuthentication(); // must come before Authorization
+//App.UseAuthorization();
+
 
 App.MapControllers();
 

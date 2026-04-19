@@ -1,72 +1,139 @@
-﻿//using AutoMapper;
-//using CareNota.Models;
-//using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using CareNota.Services.Interfaces;
+using CareNota.DTOs.Appointment;
 
-//namespace CareNota.Controllers
-//{
+[ApiController]
+[Route("api/[controller]")]
 
-//        [ApiController]
-//        [Route("api/[controller]")]
-//        public class AppointmentController : ControllerBase
-//        {
-//            private readonly IAppointmentService _service;
-//            private readonly IMapper _mapper;
+public class AppointmentController : ControllerBase
+{
+    private readonly IAppointmentService _service;
 
-//            public AppointmentController(IAppointmentService service, IMapper mapper)
-//            {
-//                _service = service;
-//                _mapper = mapper;
-//            }
+    public AppointmentController(IAppointmentService service)
+    {
+        _service = service;
+    }
 
-//            [HttpGet]
-//            public IActionResult GetAll()
-//            {
-//                var result = _mapper.Map<List<AppointmentDto>>(_service.GetAll());
-//                return Ok(result);
-//            }
+    // 🔹 Get All
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var data = await _service.GetAllAsync();
+        return Ok(data);
+    }
 
-//            [HttpGet("{id}")]
-//            public IActionResult GetById(int id)
-//            {
-//                var appointment = _service.GetById(id);
-//                if (appointment == null) return NotFound($"Appointment {id} not found.");
-//                return Ok(_mapper.Map<AppointmentDto>(appointment));
-//            }
+    // 🔹 Get By Id
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var data = await _service.GetByIdAsync(id);
 
-//            [HttpGet("date/{date}")]
-//            public IActionResult GetByDate(DateTime date)
-//            {
-//                var result = _mapper.Map<List<AppointmentDto>>(_service.GetAppointmentsByDate(date));
-//                return Ok(result);
-//            }
+        if (data == null)
+            return NotFound();
 
-//            [HttpPost]
-//            public IActionResult Add([FromBody] CreateAppointmentDto dto)
-//            {
-//                if (!ModelState.IsValid) return BadRequest(ModelState);
-//                _service.Add(_mapper.Map<Appointment>(dto));
-//                return Ok("Appointment added successfully.");
-//            }
+        return Ok(data);
+    }
 
-//            [HttpPut("{id}")]
-//            public IActionResult Update(int id, [FromBody] CreateAppointmentDto dto)
-//            {
-//                var existing = _service.GetById(id);
-//                if (existing == null) return NotFound($"Appointment {id} not found.");
-//                _mapper.Map(dto, existing);
-//                _service.Update(existing);
-//                return NoContent();
-//            }
+    // 🔹 Get Full Details
+    [HttpGet("{id}/details")]
+    public async Task<IActionResult> GetDetails(int id)
+    {
+        var data = await _service.GetDetailsAsync(id);
 
-//            [HttpDelete("{id}")]
-//            public IActionResult Delete(int id)
-//            {
-//                var existing = _service.GetById(id);
-//                if (existing == null) return NotFound($"Appointment {id} not found.");
-//                _service.Delete(id);
-//                return NoContent();
-//            }
-//        }
+        if (data == null)
+            return NotFound();
 
-//    }
+        return Ok(data);
+    }
 
+    // 🔹 Get By Patient
+    [HttpGet("patient/{patientId}")]
+    public async Task<IActionResult> GetByPatient(int patientId)
+    {
+        var data = await _service.GetByPatientIdAsync(patientId);
+        return Ok(data);
+    }
+
+    // 🔹 Get By Status
+    [HttpGet("status/{status}")]
+    public async Task<IActionResult> GetByStatus(string status)
+    {
+        var data = await _service.GetByStatusAsync(status);
+        return Ok(data);
+    }
+
+    // 🔹 Date Range
+    [HttpGet("date-range")]
+    public async Task<IActionResult> GetByDateRange(DateTime from, DateTime to)
+    {
+        try
+        {
+            var data = await _service.GetByDateRangeAsync(from, to);
+            return Ok(data);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // 🔹 Create
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateAppointmentDto dto)
+    {
+        try
+        {
+            var created = await _service.CreateAsync(dto);
+            return Ok(created);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // 🔹 Update
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, UpdateAppointmentDto dto)
+    {
+        try
+        {
+            var updated = await _service.UpdateAsync(id, dto);
+            return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // 🔹 Cancel
+    [HttpPut("{id}/cancel")]
+    public async Task<IActionResult> Cancel(int id)
+    {
+        try
+        {
+            await _service.CancelAsync(id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // 🔹 Delete
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
+        {
+            await _service.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+}

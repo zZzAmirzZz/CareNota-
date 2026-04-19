@@ -1,71 +1,73 @@
-﻿//using AutoMapper;
-//using CareNota.Models;
-//using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using CareNota.Services.Interfaces;
+using CareNota.DTOs.Doctor;
 
-//namespace CareNota.Controllers
-//{
-    
-//        [ApiController]
-//        [Route("api/[controller]")]
-//        public class DoctorController : ControllerBase
-//        {
-//            private readonly IDoctorService _service;
-//            private readonly IMapper _mapper;
+[ApiController]
+[Route("api/[controller]")]
+public class DoctorController : ControllerBase
+{
+    private readonly IDoctorService _service;
 
-//            public DoctorController(IDoctorService service, IMapper mapper)
-//            {
-//                _service = service;
-//                _mapper = mapper;
-//            }
+    public DoctorController(IDoctorService service)
+    {
+        _service = service;
+    }
 
-//            [HttpGet]
-//            public IActionResult GetAll()
-//            {
-//                var result = _mapper.Map<List<DoctorDto>>(_service.GetAll());
-//                return Ok(result);
-//            }
+    // 🔹 Get All
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var doctors = await _service.GetAllAsync();
+        return Ok(doctors);
+    }
 
-//            [HttpGet("{id}")]
-//            public IActionResult GetById(int id)
-//            {
-//                var doctor = _service.GetById(id);
-//                if (doctor == null) return NotFound($"Doctor {id} not found.");
-//                return Ok(_mapper.Map<DoctorDto>(doctor));
-//            }
+    // 🔹 Get By Id
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var doctor = await _service.GetByIdAsync(id);
 
-//            [HttpGet("specialty/{specialty}")]
-//            public IActionResult GetBySpecialty(string specialty)
-//            {
-//                var result = _mapper.Map<List<DoctorDto>>(_service.GetDoctorsBySpecialty(specialty));
-//                return Ok(result);
-//            }
+        if (doctor == null)
+            return NotFound();
 
-//            [HttpPost]
-//            public IActionResult Add([FromBody] CreateDoctorDto dto)
-//            {
-//                if (!ModelState.IsValid) return BadRequest(ModelState);
-//                _service.Add(_mapper.Map<Doctor>(dto));
-//                return Ok("Doctor added successfully.");
-//            }
+        return Ok(doctor);
+    }
 
-//            [HttpPut("{id}")]
-//            public IActionResult Update(int id, [FromBody] CreateDoctorDto dto)
-//            {
-//                var existing = _service.GetById(id);
-//                if (existing == null) return NotFound($"Doctor {id} not found.");
-//                _mapper.Map(dto, existing);
-//                _service.Update(existing);
-//                return NoContent();
-//            }
+    // 🔹 Get By Specialty
+    [HttpGet("specialty/{specialty}")]
+    public async Task<IActionResult> GetBySpecialty(string specialty)
+    {
+        var doctors = await _service.GetBySpecialtyAsync(specialty);
+        return Ok(doctors);
+    }
 
-//            [HttpDelete("{id}")]
-//            public IActionResult Delete(int id)
-//            {
-//                var existing = _service.GetById(id);
-//                if (existing == null) return NotFound($"Doctor {id} not found.");
-//                _service.Delete(id);
-//                return NoContent();
-//            }
-//        }
-//    }
+    // 🔹 Update
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, UpdateDoctorDto dto)
+    {
+        try
+        {
+            var updated = await _service.UpdateAsync(id, dto);
+            return Ok(updated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
 
+    // 🔹 Delete
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
+        {
+            await _service.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+}
