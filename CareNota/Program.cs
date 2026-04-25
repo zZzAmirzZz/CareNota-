@@ -69,6 +69,17 @@ Builder.Services.Configure<FormOptions>(Options =>
 
 Builder.Services.AddAutoMapper(typeof(Program));
 
+
+// CORS
+
+Builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
 // ── Build App ───────────────────────────────────────────────────────────────
 var App = Builder.Build();
 
@@ -82,6 +93,11 @@ using (var Scope = App.Services.CreateScope())
     await RoleSeeder.SeedRolesAsync(RoleManager);
 }
 
+
+
+
+
+
 // ── Middleware Pipeline ─────────────────────────────────────────────────────
 if (App.Environment.IsDevelopment())
 {
@@ -89,9 +105,9 @@ if (App.Environment.IsDevelopment())
     App.UseSwaggerUI();
 }
 
-App.UseHttpsRedirection();
+App.UseCors("AllowAll");
 
-// ❌ حذفنا UseAuthentication و UseAuthorization
+App.UseHttpsRedirection();
 
 App.MapControllers();
 
