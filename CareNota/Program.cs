@@ -10,6 +10,8 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
+
 
 var Builder = WebApplication.CreateBuilder(args);
 
@@ -39,7 +41,25 @@ Builder.Services.AddIdentity<ApplicationUser, IdentityRole>(Options =>
 // ── Controllers + Swagger ───────────────────────────────────────────────────
 Builder.Services.AddControllers();
 Builder.Services.AddEndpointsApiExplorer();
-Builder.Services.AddSwaggerGen();
+Builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "CareNota API", Version = "v1" });
+
+options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+{
+    Name = "Authorization",
+    Type = SecuritySchemeType.Http,
+    Scheme = "Bearer",
+    BearerFormat = "JWT",
+    In = ParameterLocation.Header,
+    Description = "Enter your JWT token below."
+});
+
+options.AddSecurityRequirement(document => new()
+{
+    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+});
+});
 
 // ── Repositories ────────────────────────────────────────────────────────────
 Builder.Services.AddScoped<IVisitRepository, VisitRepository>();
@@ -91,8 +111,13 @@ if (App.Environment.IsDevelopment())
 
 App.UseHttpsRedirection();
 
-// ❌ حذفنا UseAuthentication و UseAuthorization
+App.UseAuthentication(); // ← add back
+App.UseAuthorization();  // ← add back
 
 App.MapControllers();
 
 App.Run();
+
+
+
+
