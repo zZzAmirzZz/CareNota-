@@ -1,28 +1,30 @@
 ﻿using CareNota.DTOs.Appointment;
+using CareNota.Models;
+
 
 public interface IAppointmentService
 {
+    // ── Read ─────────────────────────────
     Task<IEnumerable<AppointmentDto>> GetAllAsync();
+    Task<AppointmentDto?> GetByIdAsync(int appointmentId);
+    Task<AppointmentDetailDto?> GetDetailsAsync(int appointmentId);
 
-    Task<AppointmentDto?> GetByIdAsync(int AppointmentId);
+    Task<IEnumerable<AppointmentDto>> GetByPatientIdAsync(int patientId);
+    Task<IEnumerable<AppointmentDto>> GetByDoctorIdAsync(int doctorId);
 
-    // Full graph including Visit summary
-    Task<AppointmentDetailDto?> GetDetailsAsync(int AppointmentId);
+    Task<IEnumerable<AppointmentDto>> GetByStatusAsync(AppointmentStatus status);
+    Task<IEnumerable<AppointmentDto>> GetByDateRangeAsync(DateTime from, DateTime to);
 
-    Task<IEnumerable<AppointmentDto>> GetByPatientIdAsync(int PatientId);
+    // Weekly schedule
+    Task<IEnumerable<AppointmentDto>> GetDoctorWeeklyScheduleAsync(int doctorId, DateTime startOfWeek);
 
-    Task<IEnumerable<AppointmentDto>> GetByDateRangeAsync(DateTime From, DateTime To);
+    // 🔥 Available slots
+    Task<IEnumerable<TimeSlotDto>> GetAvailableSlotsAsync(int doctorId, DateTime date);
 
-    Task<IEnumerable<AppointmentDto>> GetByStatusAsync(string Status);
+    // ── Write ────────────────────────────
+    Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto);
+    Task<AppointmentDto> UpdateAsync(int appointmentId, UpdateAppointmentDto dto);
 
-    // Creates with Status = "Scheduled"; validates patient exists + no same-day conflict
-    Task<AppointmentDto> CreateAsync(CreateAppointmentDto Dto);
-
-    // Can reschedule date/type and change status
-    Task<AppointmentDto> UpdateAsync(int AppointmentId, UpdateAppointmentDto Dto);
-
-    // Sets Status = "Cancelled" without deleting the row
-    Task CancelAsync(int AppointmentId);
-
-    Task DeleteAsync(int AppointmentId);
+    Task CancelAsync(int appointmentId);
+    Task DeleteAsync(int appointmentId);
 }

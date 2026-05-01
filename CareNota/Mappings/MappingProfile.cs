@@ -10,6 +10,7 @@ using CareNota.DTOs.Patient;
 using CareNota.DTOs.Prescription;
 using CareNota.DTOs.Visit;
 using CareNota.Models;
+using static CareNota.Models.Appointment;
 
 namespace CareNota.Mappings;
 
@@ -56,36 +57,58 @@ public class MappingProfile : Profile
             .ForMember(D => D.DoctorID, O => O.Ignore())
             .ForMember(D => D.UserId, O => O.Ignore())
             .ForMember(D => D.User, O => O.Ignore());
-
         // ── Appointment ─────────────────────────────────────
-        CreateMap<Appointment, AppointmentDto>()
-            .ForMember(D => D.PatientName, O => O.MapFrom(S =>
-                S.Patient != null
-                    ? S.Patient.User.FullName
-                    : string.Empty));
 
+        CreateMap<Appointment, AppointmentDto>()
+            .ForMember(d => d.PatientName, opt => opt.MapFrom(src =>
+                src.Patient != null ? src.Patient.User.FullName : string.Empty))
+
+            //  DoctorName
+            .ForMember(d => d.DoctorName, opt => opt.MapFrom(src =>
+                src.Doctor != null ? src.Doctor.User.FullName : string.Empty));
+
+
+        // Detail
         CreateMap<Appointment, AppointmentDetailDto>()
             .IncludeBase<Appointment, AppointmentDto>();
 
+
+        // Visit
         CreateMap<Visit, VisitSummaryDto>();
 
+
+        // ── Create ─────────────────────────────────────────
+
+     
+
         CreateMap<CreateAppointmentDto, Appointment>()
-            .ForMember(D => D.Status, O => O.MapFrom(_ => "Scheduled"))
-            .ForMember(D => D.CreatedAt, O => O.MapFrom(_ => DateTime.UtcNow))
-            .ForMember(D => D.Patient, O => O.Ignore())
-            .ForMember(D => D.Receptionist, O => O.Ignore())
-            .ForMember(D => D.Visit, O => O.Ignore())
-            .ForMember(D => D.Reminders, O => O.Ignore());
+            .ForMember(d => d.Status, opt => opt.MapFrom(_ => AppointmentStatus.Scheduled))
+            .ForMember(d => d.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+
+            //  navigation
+            .ForMember(d => d.Patient, opt => opt.Ignore())
+            .ForMember(d => d.Receptionist, opt => opt.Ignore())
+            .ForMember(d => d.Doctor, opt => opt.Ignore()) // 🔥 NEW
+            .ForMember(d => d.Visit, opt => opt.Ignore())
+            .ForMember(d => d.Reminders, opt => opt.Ignore());
+
+
+        // ── Update ─────────────────────────────────────────
 
         CreateMap<UpdateAppointmentDto, Appointment>()
-            .ForMember(D => D.AppointmentID, O => O.Ignore())
-            .ForMember(D => D.PatientID, O => O.Ignore())
-            .ForMember(D => D.ReceptionistID, O => O.Ignore())
-            .ForMember(D => D.CreatedAt, O => O.Ignore())
-            .ForMember(D => D.Patient, O => O.Ignore())
-            .ForMember(D => D.Receptionist, O => O.Ignore())
-            .ForMember(D => D.Visit, O => O.Ignore())
-            .ForMember(D => D.Reminders, O => O.Ignore());
+            .ForMember(d => d.AppointmentID, opt => opt.Ignore())
+            .ForMember(d => d.PatientID, opt => opt.Ignore())
+            .ForMember(d => d.ReceptionistID, opt => opt.Ignore())
+            .ForMember(d => d.DoctorID, opt => opt.Ignore()) // 🔥 مهم جدًا
+
+            .ForMember(d => d.CreatedAt, opt => opt.Ignore())
+
+            // navigation
+            .ForMember(d => d.Patient, opt => opt.Ignore())
+            .ForMember(d => d.Receptionist, opt => opt.Ignore())
+            .ForMember(d => d.Doctor, opt => opt.Ignore()) // 🔥 NEW
+            .ForMember(d => d.Visit, opt => opt.Ignore())
+            .ForMember(d => d.Reminders, opt => opt.Ignore());
 
         // ── Visit ───────────────────────────────────────────
         CreateMap<Visit, VisitDto>()

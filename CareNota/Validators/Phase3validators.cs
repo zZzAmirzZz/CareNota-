@@ -11,43 +11,67 @@ using FluentValidation;
 
 namespace CareNota.Validators.Appointment;
 
+
 public class CreateAppointmentValidator : AbstractValidator<CreateAppointmentDto>
 {
     public CreateAppointmentValidator()
     {
         RuleFor(x => x.PatientID)
-            .GreaterThan(0).WithMessage("PatientID must be a valid positive number.");
+            .GreaterThan(0)
+            .WithMessage("PatientID must be a valid positive number.");
+
+        RuleFor(x => x.DoctorID)
+            .GreaterThan(0)
+            .WithMessage("DoctorID must be a valid positive number.");
 
         RuleFor(x => x.ReceptionistID)
-            .GreaterThan(0).WithMessage("ReceptionistID must be a valid positive number.");
+            .GreaterThan(0)
+            .WithMessage("ReceptionistID must be a valid positive number.");
 
-        RuleFor(x => x.AppointmentDate)
-            .NotEmpty().WithMessage("Appointment date is required.")
-            .GreaterThan(DateTime.UtcNow).WithMessage("Appointment date must be in the future.");
+        // ── Time Validation ─────────────────────────────
+
+        RuleFor(x => x.StartTime)
+            .NotEmpty().WithMessage("Start time is required.")
+            .GreaterThan(DateTime.UtcNow)
+            .WithMessage("Start time must be in the future.");
+
+        RuleFor(x => x.EndTime)
+            .NotEmpty().WithMessage("End time is required.")
+            .GreaterThan(x => x.StartTime)
+            .WithMessage("End time must be after start time.");
+
+        // ── Type ───────────────────────────────────────
 
         RuleFor(x => x.AppointmentType)
             .NotEmpty().WithMessage("Appointment type is required.")
-            .MaximumLength(100).WithMessage("Appointment type cannot exceed 100 characters.");
+            .MaximumLength(100)
+            .WithMessage("Appointment type cannot exceed 100 characters.");
     }
 }
 // Validators/Appointment/UpdateAppointmentValidator.cs
 
 public class UpdateAppointmentValidator : AbstractValidator<UpdateAppointmentDto>
 {
-    private static readonly string[] AllowedStatuses =
-        ["Scheduled", "Completed", "Cancelled"];
-
     public UpdateAppointmentValidator()
     {
-        RuleFor(x => x.AppointmentDate)
-            .GreaterThan(DateTime.UtcNow).WithMessage("Appointment date must be in the future.")
-            .When(x => x.AppointmentDate != default);
+        // Time Range Validation
+        RuleFor(x => x.StartTime)
+            .NotEmpty().WithMessage("Start time is required.")
+            .Must((dto, startTime) => startTime < dto.EndTime)
+            .WithMessage("StartTime must be before EndTime.")
+            .When(x => x.EndTime != default);
 
+        RuleFor(x => x.EndTime)
+            .NotEmpty().WithMessage("End time is required.")
+            .GreaterThan(DateTime.UtcNow).WithMessage("End time must be in the future.")
+            .When(x => x.EndTime != default);
+
+        // Status Validation (Best way for Enum)
         RuleFor(x => x.Status)
-            .NotEmpty().WithMessage("Status is required.")
-            .Must(s => AllowedStatuses.Contains(s))
-            .WithMessage("Status must be Scheduled, Completed, or Cancelled.");
+            .IsInEnum().WithMessage("Invalid appointment status.")
+            .WithMessage("Status must be one of: Scheduled, Completed, or Cancelled.");
 
+        // Appointment Type
         RuleFor(x => x.AppointmentType)
             .NotEmpty().WithMessage("Appointment type is required.")
             .MaximumLength(100).WithMessage("Appointment type cannot exceed 100 characters.");

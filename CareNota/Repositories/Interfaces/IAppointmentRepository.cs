@@ -1,25 +1,29 @@
 ﻿using CareNota.Models;
+using static CareNota.Models.Appointment;
 
 public interface IAppointmentRepository : IRepository<Appointment>
 {
-    // Single appointment including its Visit navigation
-    Task<Appointment?> GetWithVisitAsync(int AppointmentId);
+    // ── Single / Details ─────────────────────────────
+    Task<Appointment?> GetWithVisitAsync(int appointmentId);
+    Task<Appointment?> GetFullDetailsAsync(int appointmentId);
 
-    // Full graph: Patient + Receptionist + Visit + LabTests + Reminders
-    Task<Appointment?> GetFullDetailsAsync(int AppointmentId);
+    // ── Filters ──────────────────────────────────────
+    Task<IEnumerable<Appointment>> GetByPatientIdAsync(int patientId);
+    Task<IEnumerable<Appointment>> GetByDoctorIdAsync(int doctorId);
+    Task<IEnumerable<Appointment>> GetByReceptionistIdAsync(int receptionistId);
+    Task<IEnumerable<Appointment>> GetByStatusAsync(AppointmentStatus status);
+    // ── Time-based Queries ───────────────────────────
+    Task<IEnumerable<Appointment>> GetByDateRangeAsync(DateTime from, DateTime to);
 
-    // All appointments for one patient, ordered by date desc
-    Task<IEnumerable<Appointment>> GetByPatientIdAsync(int PatientId);
+    // Weekly schedule
+    Task<IEnumerable<Appointment>> GetDoctorWeeklyScheduleAsync(int doctorId, DateTime startOfWeek);
 
-    // All appointments managed by one receptionist
-    Task<IEnumerable<Appointment>> GetByReceptionistIdAsync(int ReceptionistId);
+    // Daily appointments (used for slots)
+    Task<IEnumerable<Appointment>> GetDoctorAppointmentsByDateAsync(int doctorId, DateTime date);
 
-    // Filter by status string ("Scheduled", "Completed", "Cancelled" …)
-    Task<IEnumerable<Appointment>> GetByStatusAsync(string Status);
+    // ── Conflict Checks ──────────────────────────────
+    Task<bool> HasDoctorConflictAsync(int doctorId, DateTime start, DateTime end, int? excludeAppointmentId = null);
+    Task<bool> HasPatientConflictAsync(int patientId, DateTime start, DateTime end, int? excludeAppointmentId = null);
 
-    // Date range query (inclusive, ordered by date asc)
-    Task<IEnumerable<Appointment>> GetByDateRangeAsync(DateTime From, DateTime To);
-
-    // Returns true if the patient already has a non-cancelled appointment on that day
-    Task<bool> HasConflictAsync(int PatientId, DateTime AppointmentDate);
+    IQueryable<Appointment> QueryWithNames();
 }

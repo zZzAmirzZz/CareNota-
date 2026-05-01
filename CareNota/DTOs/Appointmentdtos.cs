@@ -1,16 +1,24 @@
-﻿namespace CareNota.DTOs.Appointment;
+﻿
+using CareNota.Models;
+
+namespace CareNota.DTOs.Appointment;
 
 // ── Read ──────────────────────────────────────────────────────────────────────
 
 public class AppointmentDto
 {
     public int AppointmentID { get; set; }
-    public DateTime AppointmentDate { get; set; }
-    public string Status { get; set; } = string.Empty;
+
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+
+    public AppointmentStatus Status { get; set; }
     public string AppointmentType { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public int PatientID { get; set; }
     public string PatientName { get; set; } = string.Empty;  // From Patient.User
+    public int DoctorID { get; set; }
+    public string DoctorName { get; set; } = string.Empty;
     public int ReceptionistID { get; set; }
 }
 
@@ -31,15 +39,21 @@ public class VisitSummaryDto
 
 public class CreateAppointmentDto
 {
-    public DateTime AppointmentDate { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+
     public string AppointmentType { get; set; } = string.Empty;
+
     public int PatientID { get; set; }
+    public int DoctorID { get; set; }
     public int ReceptionistID { get; set; }
 }
 
 public class UpdateAppointmentDto
 {
-    public DateTime AppointmentDate { get; set; }
-    public string Status { get; set; } = string.Empty;
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+
+    public AppointmentStatus Status { get; set; }
     public string AppointmentType { get; set; } = string.Empty;
 }
