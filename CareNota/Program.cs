@@ -7,10 +7,13 @@ using CareNota.Services.Interfaces;
 using CareNota.Validators.Appointment;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System.Text;
 
 
 var Builder = WebApplication.CreateBuilder(args);
@@ -36,7 +39,6 @@ Builder.Services.AddIdentity<ApplicationUser, IdentityRole>(Options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// ❌ حذفنا JWT Authentication + Authorization بالكامل
 
 // ── Controllers + Swagger ───────────────────────────────────────────────────
 Builder.Services.AddControllers();
@@ -89,19 +91,63 @@ Builder.Services.Configure<FormOptions>(Options =>
 
 Builder.Services.AddAutoMapper(typeof(Program));
 
+// ── JWT Authentication ───────────────────────────────────────────────────────
+Builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(Builder.Configuration["Jwt:Key"]!)),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+});
+
 // ── Build App ───────────────────────────────────────────────────────────────
 var App = Builder.Build();
 
-// ── Role Seeding + Migrations ───────────────────────────────────────────────
-using (var Scope = App.Services.CreateScope())
+// Seed Roles + Admin
+using (var scope = App.Services.CreateScope())
 {
-    var Db = Scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    Db.Database.Migrate();
+    // Run migrations
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
 
-    var RoleManager = Scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    await RoleSeeder.SeedRolesAsync(RoleManager);
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+    // Create roles
+    string[] roles = { "admin", "doctor", "patient", "receptionist" };
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole(role));
+    }
+
+    // Create first admin
+    var adminEmail = "admin@carenota.com";
+    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    {
+        var admin = new ApplicationUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            FullName = "Super Admin",
+            Gender = "N/A",
+            EmailConfirmed = true
+        };
+
+        var result = await userManager.CreateAsync(admin, "Admin@123456");
+        if (result.Succeeded)
+            await userManager.AddToRoleAsync(admin, "admin");
+    }
 }
-
 // ── Middleware Pipeline ─────────────────────────────────────────────────────
 if (App.Environment.IsDevelopment())
 {
