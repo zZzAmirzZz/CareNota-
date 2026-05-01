@@ -1,129 +1,208 @@
 ﻿using AutoMapper;
+using CareNota.DTOs;
 using CareNota.DTOs.Appointment;
 using CareNota.Models;
+using Microsoft.EntityFrameworkCore;
 
 public class AppointmentService : IAppointmentService
 {
-    private readonly IAppointmentRepository _AppointmentRepo;
-    private readonly IPatientRepository _PatientRepo;
-    private readonly IMapper _Mapper;
+    private readonly IAppointmentRepository _appointmentRepo;
+    private readonly IPatientRepository _patientRepo;
+    private readonly IMapper _mapper;
 
     public AppointmentService(
-        IAppointmentRepository AppointmentRepo,
-        IPatientRepository PatientRepo,
-        IMapper Mapper)
+        IAppointmentRepository appointmentRepo,
+        IPatientRepository patientRepo,
+        IMapper mapper)
     {
-        _AppointmentRepo = AppointmentRepo;
-        _PatientRepo = PatientRepo;
-        _Mapper = Mapper;
+        _appointmentRepo = appointmentRepo;
+        _patientRepo = patientRepo;
+        _mapper = mapper;
     }
 
-    // ── Read ──────────────────────────────────────────────────────────────────
+    // ── READ ─────────────────────────────────────────
 
     public async Task<IEnumerable<AppointmentDto>> GetAllAsync()
     {
-        var Appointments = await _AppointmentRepo.GetAllAsync();
-        return _Mapper.Map<IEnumerable<AppointmentDto>>(Appointments);
+        var data = await _appointmentRepo
+            .QueryWithNames()
+            .AsNoTracking()
+            .ToListAsync();
+
+        return _mapper.Map<IEnumerable<AppointmentDto>>(data);
     }
 
-    public async Task<AppointmentDto?> GetByIdAsync(int AppointmentId)
+    public async Task<AppointmentDto?> GetByIdAsync(int appointmentId)
     {
-        var Appointment = await _AppointmentRepo.GetByIdAsync(AppointmentId);
-        return Appointment is null ? null : _Mapper.Map<AppointmentDto>(Appointment);
+        var data = await _appointmentRepo
+            .QueryWithNames()
+            .FirstOrDefaultAsync(a => a.AppointmentID == appointmentId);
+        return data == null ? null : _mapper.Map<AppointmentDto>(data);
     }
 
-    public async Task<AppointmentDetailDto?> GetDetailsAsync(int AppointmentId)
+    public async Task<AppointmentDetailDto?> GetDetailsAsync(int appointmentId)
     {
-        var Appointment = await _AppointmentRepo.GetFullDetailsAsync(AppointmentId);
-        return Appointment is null ? null : _Mapper.Map<AppointmentDetailDto>(Appointment);
+        var data = await _appointmentRepo.GetFullDetailsAsync(appointmentId);
+        return data == null ? null : _mapper.Map<AppointmentDetailDto>(data);
     }
 
-    public async Task<IEnumerable<AppointmentDto>> GetByPatientIdAsync(int PatientId)
+    public async Task<IEnumerable<AppointmentDto>> GetByPatientIdAsync(int patientId)
     {
-        var Appointments = await _AppointmentRepo.GetByPatientIdAsync(PatientId);
-        return _Mapper.Map<IEnumerable<AppointmentDto>>(Appointments);
+        var data = await _appointmentRepo.GetByPatientIdAsync(patientId);
+        return _mapper.Map<IEnumerable<AppointmentDto>>(data);
     }
 
-    public async Task<IEnumerable<AppointmentDto>> GetByDateRangeAsync(
-        DateTime From, DateTime To)
+    public async Task<IEnumerable<AppointmentDto>> GetByDoctorIdAsync(int doctorId)
     {
-        if (From > To)
-            throw new ArgumentException("'From' date must be earlier than 'To' date.");
-
-        var Appointments = await _AppointmentRepo.GetByDateRangeAsync(From, To);
-        return _Mapper.Map<IEnumerable<AppointmentDto>>(Appointments);
+        var data = await _appointmentRepo.GetByDoctorIdAsync(doctorId);
+        return _mapper.Map<IEnumerable<AppointmentDto>>(data);
     }
 
-    public async Task<IEnumerable<AppointmentDto>> GetByStatusAsync(string Status)
+    public async Task<IEnumerable<AppointmentDto>> GetByStatusAsync(AppointmentStatus status)
     {
-        var Appointments = await _AppointmentRepo.GetByStatusAsync(Status);
-        return _Mapper.Map<IEnumerable<AppointmentDto>>(Appointments);
+        var data = await _appointmentRepo.GetByStatusAsync(status);
+        return _mapper.Map<IEnumerable<AppointmentDto>>(data);
     }
 
-    // ── Write ─────────────────────────────────────────────────────────────────
-
-    public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto Dto)
+    public async Task<IEnumerable<AppointmentDto>> GetByDateRangeAsync(DateTime from, DateTime to)
     {
-        // 1. Patient must exist
-        var PatientExists = await _PatientRepo
-            .ExistsAsync(P => P.PatientID == Dto.PatientID);
-        if (!PatientExists)
-            throw new KeyNotFoundException($"Patient {Dto.PatientID} not found.");
+        if (from >= to)
+            throw new ArgumentException("Invalid date range.");
 
-        // 2. No same-day conflict for this patient
-        var HasConflict = await _AppointmentRepo
-            .HasConflictAsync(Dto.PatientID, Dto.AppointmentDate);
-        if (HasConflict)
-            throw new InvalidOperationException(
-                "Patient already has an active appointment on this date.");
-
-        // 3. Map and persist — AutoMapper sets Status = "Scheduled", CreatedAt = UtcNow
-        var newAppointment = _Mapper.Map<Appointment>(Dto);
-        await _AppointmentRepo.AddAsync(newAppointment);
-        await _AppointmentRepo.SaveChangesAsync();
-
-        // 4. Re-fetch with Patient.User so PatientName is populated in the response
-        var Created = await _AppointmentRepo.GetWithVisitAsync(newAppointment.AppointmentID);
-        return _Mapper.Map<AppointmentDto>(Created!);
+        var data = await _appointmentRepo.GetByDateRangeAsync(from, to);
+        return _mapper.Map<IEnumerable<AppointmentDto>>(data);
     }
 
-    public async Task<AppointmentDto> UpdateAsync(
-        int AppointmentId, UpdateAppointmentDto Dto)
+    public async Task<IEnumerable<AppointmentDto>> GetDoctorWeeklyScheduleAsync(int doctorId, DateTime startOfWeek)
     {
-        var Appointment = await _AppointmentRepo.GetByIdAsync(AppointmentId)
-            ?? throw new KeyNotFoundException($"Appointment {AppointmentId} not found.");
-
-        if (Appointment.Status == "Cancelled")
-            throw new InvalidOperationException(
-                "Cannot update a cancelled appointment.");
-
-        _Mapper.Map(Dto, Appointment);
-        _AppointmentRepo.Update(Appointment);
-        await _AppointmentRepo.SaveChangesAsync();
-
-        var Updated = await _AppointmentRepo.GetWithVisitAsync(AppointmentId);
-        return _Mapper.Map<AppointmentDto>(Updated!);
+        var data = await _appointmentRepo.GetDoctorWeeklyScheduleAsync(doctorId, startOfWeek);
+        return _mapper.Map<IEnumerable<AppointmentDto>>(data);
     }
 
-    public async Task CancelAsync(int AppointmentId)
+    // ── AVAILABLE SLOTS ─────────────────────────────
+
+    public async Task<IEnumerable<TimeSlotDto>> GetAvailableSlotsAsync(int doctorId, DateTime date)
     {
-        var Appointment = await _AppointmentRepo.GetByIdAsync(AppointmentId)
-            ?? throw new KeyNotFoundException($"Appointment {AppointmentId} not found.");
+        var workStart = date.Date.AddHours(9);
+        var workEnd = date.Date.AddHours(17);
+        var slotDuration = TimeSpan.FromMinutes(30);
 
-        if (Appointment.Status == "Cancelled")
-            throw new InvalidOperationException("Appointment is already cancelled.");
+        var appointments = await _appointmentRepo
+            .GetDoctorAppointmentsByDateAsync(doctorId, date);
 
-        Appointment.Status = "Cancelled";
-        _AppointmentRepo.Update(Appointment);
-        await _AppointmentRepo.SaveChangesAsync();
+        var availableSlots = new List<TimeSlotDto>();
+
+        for (var time = workStart; time < workEnd; time += slotDuration)
+        {
+            var slotStart = time;
+            var slotEnd = time + slotDuration;
+
+            var hasConflict = appointments.Any(a =>
+                slotStart < a.EndTime &&
+                slotEnd > a.StartTime);
+
+            if (!hasConflict)
+            {
+                availableSlots.Add(new TimeSlotDto
+                {
+                    Start = slotStart,
+                    End = slotEnd
+                });
+            }
+        }
+
+        return availableSlots;
     }
 
-    public async Task DeleteAsync(int AppointmentId)
-    {
-        var Appointment = await _AppointmentRepo.GetByIdAsync(AppointmentId)
-            ?? throw new KeyNotFoundException($"Appointment {AppointmentId} not found.");
+    // ── CREATE ──────────────────────────────────────
 
-        _AppointmentRepo.Remove(Appointment);
-        await _AppointmentRepo.SaveChangesAsync();
+    public async Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto)
+    {
+        if (dto.StartTime >= dto.EndTime)
+            throw new ArgumentException("StartTime must be before EndTime.");
+
+        var patientExists = await _patientRepo
+            .ExistsAsync(p => p.PatientID == dto.PatientID);
+
+        if (!patientExists)
+            throw new KeyNotFoundException("Patient not found.");
+
+        var doctorConflict = await _appointmentRepo
+            .HasDoctorConflictAsync(dto.DoctorID, dto.StartTime, dto.EndTime);
+
+        if (doctorConflict)
+            throw new InvalidOperationException("Doctor is not available at this time.");
+
+        var patientConflict = await _appointmentRepo
+            .HasPatientConflictAsync(dto.PatientID, dto.StartTime, dto.EndTime);
+
+        if (patientConflict)
+            throw new InvalidOperationException("Patient already has an overlapping appointment.");
+
+        var appointment = _mapper.Map<Appointment>(dto);
+
+        appointment.Status = AppointmentStatus.Scheduled; // ✅ FIX
+        appointment.CreatedAt = DateTime.UtcNow;
+
+        await _appointmentRepo.AddAsync(appointment);
+        await _appointmentRepo.SaveChangesAsync();
+
+        var created = await _appointmentRepo.GetWithVisitAsync(appointment.AppointmentID);
+        return _mapper.Map<AppointmentDto>(created!);
+    }
+
+    // ── UPDATE ──────────────────────────────────────
+
+    public async Task<AppointmentDto> UpdateAsync(int appointmentId, UpdateAppointmentDto dto)
+    {
+        var appointment = await _appointmentRepo.GetByIdAsync(appointmentId)
+            ?? throw new KeyNotFoundException("Appointment not found.");
+
+        if (appointment.Status == AppointmentStatus.Cancelled)
+            throw new InvalidOperationException("Cannot update cancelled appointment.");
+
+        if (dto.StartTime >= dto.EndTime)
+            throw new ArgumentException("Invalid time range.");
+
+        var doctorConflict = await _appointmentRepo
+            .HasDoctorConflictAsync(appointment.DoctorID, dto.StartTime, dto.EndTime, appointmentId);
+
+        if (doctorConflict)
+            throw new InvalidOperationException("Doctor not available.");
+
+        _mapper.Map(dto, appointment);
+
+        _appointmentRepo.Update(appointment);
+        await _appointmentRepo.SaveChangesAsync();
+
+        var updated = await _appointmentRepo.GetWithVisitAsync(appointmentId);
+        return _mapper.Map<AppointmentDto>(updated!);
+    }
+
+    // ── CANCEL ──────────────────────────────────────
+
+    public async Task CancelAsync(int appointmentId)
+    {
+        var appointment = await _appointmentRepo.GetByIdAsync(appointmentId)
+            ?? throw new KeyNotFoundException("Appointment not found.");
+
+        if (appointment.Status == AppointmentStatus.Cancelled)
+            throw new InvalidOperationException("Already cancelled.");
+
+        appointment.Status = AppointmentStatus.Cancelled;
+
+        _appointmentRepo.Update(appointment);
+        await _appointmentRepo.SaveChangesAsync();
+    }
+
+    // ── DELETE ──────────────────────────────────────
+
+    public async Task DeleteAsync(int appointmentId)
+    {
+        var appointment = await _appointmentRepo.GetByIdAsync(appointmentId)
+            ?? throw new KeyNotFoundException("Appointment not found.");
+
+        _appointmentRepo.Remove(appointment);
+        await _appointmentRepo.SaveChangesAsync();
     }
 }

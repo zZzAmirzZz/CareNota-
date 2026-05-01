@@ -1,74 +1,93 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CareNota.Services.Interfaces;
 using CareNota.DTOs.Appointment;
+using CareNota.Models;
+using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
+
+namespace CareNota.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-
 public class AppointmentController : ControllerBase
 {
-    private readonly IAppointmentService _service;
+    private readonly IAppointmentService _appointmentService;
+    private readonly IValidator<CreateAppointmentDto> _createValidator;
+    private readonly IValidator<UpdateAppointmentDto> _updateValidator;
 
-    public AppointmentController(IAppointmentService service)
+    public AppointmentController(
+        IAppointmentService appointmentService,
+        IValidator<CreateAppointmentDto> createValidator,
+        IValidator<UpdateAppointmentDto> updateValidator)
     {
-        _service = service;
+        _appointmentService = appointmentService;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
     }
 
-    // 🔹 Get All
+    // ── READ ENDPOINTS ─────────────────────────────────────────────────────
+
     [HttpGet]
+    //[Authorize]                                   // Any authenticated user
     public async Task<IActionResult> GetAll()
     {
-        var data = await _service.GetAllAsync();
+        var data = await _appointmentService.GetAllAsync();
         return Ok(data);
     }
 
-    // 🔹 Get By Id
     [HttpGet("{id}")]
+    //[Authorize]
     public async Task<IActionResult> GetById(int id)
     {
-        var data = await _service.GetByIdAsync(id);
-
-        if (data == null)
-            return NotFound();
-
-        return Ok(data);
+        var data = await _appointmentService.GetByIdAsync(id);
+        return data == null ? NotFound() : Ok(data);
     }
 
-    // 🔹 Get Full Details
     [HttpGet("{id}/details")]
+    //[Authorize]
     public async Task<IActionResult> GetDetails(int id)
     {
-        var data = await _service.GetDetailsAsync(id);
-
-        if (data == null)
-            return NotFound();
-
-        return Ok(data);
+        var data = await _appointmentService.GetDetailsAsync(id);
+        return data == null ? NotFound() : Ok(data);
     }
 
-    // 🔹 Get By Patient
     [HttpGet("patient/{patientId}")]
+    //[Authorize(Roles = "Patient,Doctor,Receptionist,Admin")]
     public async Task<IActionResult> GetByPatient(int patientId)
     {
-        var data = await _service.GetByPatientIdAsync(patientId);
+        var data = await _appointmentService.GetByPatientIdAsync(patientId);
         return Ok(data);
     }
 
-    // 🔹 Get By Status
+    [HttpGet("doctor/{doctorId}")]
+    //[Authorize(Roles = "Doctor,Receptionist,Admin")]
+    public async Task<IActionResult> GetByDoctor(int doctorId)
+    {
+        var data = await _appointmentService.GetByDoctorIdAsync(doctorId);
+        return Ok(data);
+    }
+
+    // ── Get By Status (Corrected & Improved) ─────────────────────────────
     [HttpGet("status/{status}")]
+    //[Authorize(Roles = "Receptionist,Admin,Doctor")]
     public async Task<IActionResult> GetByStatus(string status)
     {
-        var data = await _service.GetByStatusAsync(status);
+        if (!Enum.TryParse<AppointmentStatus>(status, true, out var appointmentStatus))
+        {
+            return BadRequest("Invalid status. Allowed values: Scheduled, Completed, Cancelled");
+        }
+
+        var data = await _appointmentService.GetByStatusAsync(appointmentStatus);
         return Ok(data);
     }
 
-    // 🔹 Date Range
     [HttpGet("date-range")]
-    public async Task<IActionResult> GetByDateRange(DateTime from, DateTime to)
+    //[Authorize(Roles = "Receptionist,Admin,Doctor")]
+    public async Task<IActionResult> GetByDateRange([FromQuery] DateTime from, [FromQuery] DateTime to)
     {
         try
         {
-            var data = await _service.GetByDateRangeAsync(from, to);
+            var data = await _appointmentService.GetByDateRangeAsync(from, to);
             return Ok(data);
         }
         catch (ArgumentException ex)
@@ -77,61 +96,104 @@ public class AppointmentController : ControllerBase
         }
     }
 
-    // 🔹 Create
-    [HttpPost]
-    public async Task<IActionResult> Create(CreateAppointmentDto dto)
+    [HttpGet("doctor/{doctorId}/weekly")]
+    //[Authorize(Roles = "Doctor,Receptionist,Admin")]
+    public async Task<IActionResult> GetWeeklySchedule(int doctorId, [FromQuery] DateTime startOfWeek)
     {
+        var data = await _appointmentService.GetDoctorWeeklyScheduleAsync(doctorId, startOfWeek);
+        return Ok(data);
+    }
+
+    [HttpGet("doctor/{doctorId}/available-slots")]
+    //[Authorize(Roles = "Receptionist,Admin")]
+    public async Task<IActionResult> GetAvailableSlots(int doctorId, [FromQuery] DateTime date)
+    {
+        var slots = await _appointmentService.GetAvailableSlotsAsync(doctorId, date);
+        return Ok(slots);
+    }
+
+    // ── WRITE ENDPOINTS ────────────────────────────────────────────────────
+
+    [HttpPost]
+    //[Authorize(Roles = "Receptionist")]        // Usually only Receptionist/Admin can create
+    public async Task<IActionResult> Create([FromBody] CreateAppointmentDto dto)
+    {
+        var validationResult = await _createValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors);
+
         try
         {
-            var created = await _service.CreateAsync(dto);
-            return Ok(created);
+            var created = await _appointmentService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = created.AppointmentID }, created);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
         }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            // TODO: Add proper logging (Serilog)
+            return StatusCode(500, "An error occurred while creating the appointment.");
+        }
     }
 
-    // 🔹 Update
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, UpdateAppointmentDto dto)
+    //[Authorize(Roles = "Receptionist,Admin,Doctor")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateAppointmentDto dto)
     {
+        var validationResult = await _updateValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors);
+
         try
         {
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _appointmentService.UpdateAsync(id, dto);
             return Ok(updated);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
         }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
-    // 🔹 Cancel
     [HttpPut("{id}/cancel")]
+    //[Authorize(Roles = "Receptionist,Admin")]
     public async Task<IActionResult> Cancel(int id)
     {
         try
         {
-            await _service.CancelAsync(id);
+            await _appointmentService.CancelAsync(id);
             return NoContent();
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
         }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
-    // 🔹 Delete
     [HttpDelete("{id}")]
+    //[Authorize(Roles = "Admin")]        // Only Admin should hard delete
     public async Task<IActionResult> Delete(int id)
     {
         try
         {
-            await _service.DeleteAsync(id);
+            await _appointmentService.DeleteAsync(id);
             return NoContent();
         }
-        catch (Exception ex)
+        catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
         }

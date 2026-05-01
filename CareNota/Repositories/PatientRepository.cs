@@ -7,34 +7,44 @@ public class PatientRepository : GenericRepository<Patient>, IPatientRepository
 {
     public PatientRepository(ApplicationDbContext Context) : base(Context) { }
 
-    public async Task<Patient?> GetByUserIdAsync(string UserId)
-        => await DbSet
-            .Include(P => P.User)
-            .FirstOrDefaultAsync(P => P.UserId == UserId);
+    public async Task<Patient?> GetByUserIdAsync(string userId)
+          => await DbSet
+              .Include(p => p.User)
+              .FirstOrDefaultAsync(p => p.UserId == userId);
 
-    public async Task<Patient?> GetWithMedicalHistoryAsync(int PatientId)
+    public async Task<Patient?> GetWithMedicalHistoryAsync(int patientId)
         => await DbSet
-            .Include(P => P.User)
-            .Include(P => P.MedicalHistory)
-            .FirstOrDefaultAsync(P => P.PatientID == PatientId);
+            .Include(p => p.User)
+            .Include(p => p.MedicalHistory)
+            .FirstOrDefaultAsync(p => p.PatientID == patientId);
+    public async Task<Patient?> GetWithAppointmentsAsync(int patientId)
+            => await DbSet
+                .Include(p => p.User)
+                .Include(p => p.Appointments)
+                .FirstOrDefaultAsync(p => p.PatientID == patientId);
+    public async Task<Patient?> GetWithRemindersAsync(int patientId)
+           => await DbSet
+               .Include(p => p.User)
+               .Include(p => p.Reminders)
+               .FirstOrDefaultAsync(p => p.PatientID == patientId);
 
-    public async Task<Patient?> GetWithAppointmentsAsync(int PatientId)
-        => await DbSet
-            .Include(P => P.User)
-            .Include(P => P.Appointments)
-            .FirstOrDefaultAsync(P => P.PatientID == PatientId);
+    public async Task<IEnumerable<Patient>> SearchByNameAsync(string name)
+          => await DbSet
+              .Include(p => p.User)
+              .Where(p => p.User.FullName.ToLower().Contains(name.ToLower()))
+              .AsNoTracking()
+              .ToListAsync();
 
-    public async Task<Patient?> GetWithRemindersAsync(int PatientId)
-        => await DbSet
-            .Include(P => P.User)
-            .Include(P => P.Reminders)
-            .FirstOrDefaultAsync(P => P.PatientID == PatientId);
 
-    public async Task<IEnumerable<Patient>> SearchByNameAsync(string Name)
+    public  async Task<IEnumerable<Patient>> GetAllAsync()
         => await DbSet
-            .Include(P => P.User)
-            .Where(P => (P.User.FullName)
-                .ToLower().Contains(Name.ToLower()))
+            .Include(p => p.User)
             .AsNoTracking()
             .ToListAsync();
+
+    // GetByIdAsync مع Include
+    public  async Task<Patient?> GetByIdAsync(int patientId)
+        => await DbSet
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.PatientID == patientId);
 }

@@ -1,4 +1,5 @@
 using CareNota.Data;
+using CareNota.Mappings;
 using CareNota.Models;
 using CareNota.Repositories;
 using CareNota.Repositories.Interfaces;
@@ -13,8 +14,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text;
-
 
 var Builder = WebApplication.CreateBuilder(args);
 
@@ -41,7 +43,14 @@ Builder.Services.AddIdentity<ApplicationUser, IdentityRole>(Options =>
 
 
 // ── Controllers + Swagger ───────────────────────────────────────────────────
-Builder.Services.AddControllers();
+//Builder.Services.AddControllers();
+
+Builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 Builder.Services.AddEndpointsApiExplorer();
 Builder.Services.AddSwaggerGen(options =>
 {
@@ -64,20 +73,32 @@ options.AddSecurityRequirement(document => new()
 });
 
 // ── Repositories ────────────────────────────────────────────────────────────
+Builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+Builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+Builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 Builder.Services.AddScoped<IVisitRepository, VisitRepository>();
 Builder.Services.AddScoped<IDiagnosisRepository, DiagnosisRepository>();
 Builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
 Builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
 Builder.Services.AddScoped<ILabTestRepository, LabTestRepository>();
-Builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+
+
 
 // ── Services ────────────────────────────────────────────────────────────────
+
 Builder.Services.AddScoped<IAuthService, AuthService>();
+Builder.Services.AddScoped<IPatientService, PatientService>();
+Builder.Services.AddScoped<IDoctorService, DoctorService>();
 Builder.Services.AddScoped<IVisitService, VisitService>();
 Builder.Services.AddScoped<IDiagnosisService, DiagnosisService>();
 Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
+Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+
+
+
+Builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // ── FluentValidation ─────────────────────────────────────────────────────────
 Builder.Services.AddFluentValidationAutoValidation();
@@ -91,6 +112,17 @@ Builder.Services.Configure<FormOptions>(Options =>
 
 Builder.Services.AddAutoMapper(typeof(Program));
 
+
+// CORS
+
+Builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
 // ── JWT Authentication ───────────────────────────────────────────────────────
 Builder.Services.AddAuthentication(options =>
 {
@@ -130,6 +162,9 @@ using (var scope = App.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(role));
     }
 
+
+
+
     // Create first admin
     var adminEmail = "admin@carenota.com";
     if (await userManager.FindByEmailAsync(adminEmail) == null)
@@ -155,10 +190,9 @@ if (App.Environment.IsDevelopment())
     App.UseSwaggerUI();
 }
 
-App.UseHttpsRedirection();
+App.UseCors("AllowAll");
 
-App.UseAuthentication(); // ← add back
-App.UseAuthorization();  // ← add back
+App.UseHttpsRedirection();
 
 App.MapControllers();
 

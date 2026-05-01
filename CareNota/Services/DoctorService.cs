@@ -37,6 +37,7 @@ public class DoctorService : IDoctorService
 
     // ── Write ─────────────────────────────────────────────────────────────────
 
+
     public async Task<DoctorDto> UpdateAsync(int DoctorId, UpdateDoctorDto Dto)
     {
         var Doctor = await _DoctorRepo.GetByIdAsync(DoctorId)
