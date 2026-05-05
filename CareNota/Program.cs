@@ -8,15 +8,16 @@ using CareNota.Services.Interfaces;
 using CareNota.Validators.Appointment;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text;
 
 var Builder = WebApplication.CreateBuilder(args);
 
@@ -95,7 +96,17 @@ Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
 Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+// Email
+Builder.Services.Configure<EmailSettings>(
+Builder.Configuration.GetSection("EmailSettings"));
+Builder.Services.AddScoped<IEmailService, EmailService>();
+Builder.Services.AddScoped<IReminderService, ReminderService>();
 
+// Hangfire
+Builder.Services.AddHangfire(config =>
+    config.UseSqlServerStorage(
+        Builder.Configuration.GetConnectionString("DefaultConnection")));
+Builder.Services.AddHangfireServer();
 
 
 Builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -184,6 +195,25 @@ using (var scope = App.Services.CreateScope())
     }
 }
 // ── Middleware Pipeline ─────────────────────────────────────────────────────
+// Hangfire dashboard (access at /hangfire while in development)
+App.UseHangfireDashboard("/hangfire");
+
+// Schedule recurring jobs
+RecurringJob.AddOrUpdate<IReminderService>(
+    "check-missed-appointments",
+    x => x.CheckMissedAppointmentsAsync(),
+    Cron.Hourly);
+
+RecurringJob.AddOrUpdate<IReminderService>(
+    "upcoming-appointment-reminders",
+    x => x.SendUpcomingAppointmentRemindersAsync(),
+    Cron.Hourly);
+
+RecurringJob.AddOrUpdate<IReminderService>(
+    "medication-reminders",
+    x => x.SendMedicationRemindersAsync(),
+    Cron.Hourly); 
+
 if (App.Environment.IsDevelopment())
 {
     App.UseSwagger();

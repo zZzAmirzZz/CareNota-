@@ -2,22 +2,28 @@
 using CareNota.DTOs;
 using CareNota.DTOs.Appointment;
 using CareNota.Models;
+using CareNota.Services;
+using CareNota.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 public class AppointmentService : IAppointmentService
 {
     private readonly IAppointmentRepository _appointmentRepo;
     private readonly IPatientRepository _patientRepo;
     private readonly IMapper _mapper;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public AppointmentService(
         IAppointmentRepository appointmentRepo,
         IPatientRepository patientRepo,
-        IMapper mapper)
+        IMapper mapper,
+        IServiceScopeFactory scopeFactory)
     {
         _appointmentRepo = appointmentRepo;
         _patientRepo = patientRepo;
         _mapper = mapper;
+        _scopeFactory = scopeFactory;
     }
 
     // ── READ ─────────────────────────────────────────
@@ -140,12 +146,21 @@ public class AppointmentService : IAppointmentService
             throw new InvalidOperationException("Patient already has an overlapping appointment.");
 
         var appointment = _mapper.Map<Appointment>(dto);
-
-        appointment.Status = AppointmentStatus.Scheduled; // ✅ FIX
+        appointment.Status = AppointmentStatus.Scheduled;
         appointment.CreatedAt = DateTime.UtcNow;
 
         await _appointmentRepo.AddAsync(appointment);
         await _appointmentRepo.SaveChangesAsync();
+
+        // Fire confirmation email in background with its own scope
+        var appointmentId = appointment.AppointmentID;
+        _ = Task.Run(async () =>
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var reminderService = scope.ServiceProvider
+                .GetRequiredService<IReminderService>();
+            await reminderService.SendAppointmentConfirmationAsync(appointmentId);
+        });
 
         var created = await _appointmentRepo.GetWithVisitAsync(appointment.AppointmentID);
         return _mapper.Map<AppointmentDto>(created!);
@@ -190,9 +205,17 @@ public class AppointmentService : IAppointmentService
             throw new InvalidOperationException("Already cancelled.");
 
         appointment.Status = AppointmentStatus.Cancelled;
-
         _appointmentRepo.Update(appointment);
         await _appointmentRepo.SaveChangesAsync();
+
+        // Fire cancellation email in background with its own scope
+        _ = Task.Run(async () =>
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var reminderService = scope.ServiceProvider
+                .GetRequiredService<IReminderService>();
+            await reminderService.SendAppointmentCancellationAsync(appointmentId);
+        });
     }
 
     // ── DELETE ──────────────────────────────────────

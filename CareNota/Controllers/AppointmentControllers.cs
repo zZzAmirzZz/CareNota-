@@ -137,8 +137,7 @@ public class AppointmentController : ControllerBase
         }
         catch (Exception ex)
         {
-            // TODO: Add proper logging (Serilog)
-            return StatusCode(500, "An error occurred while creating the appointment.");
+            return StatusCode(500, ex.Message + " | " + ex.InnerException?.Message);
         }
     }
 
