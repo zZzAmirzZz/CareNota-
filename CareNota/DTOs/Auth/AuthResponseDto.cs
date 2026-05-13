@@ -9,4 +9,7 @@ public class AuthResponseDto
     public string Email { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public IList<string> Roles { get; set; } = [];
+    public int? DoctorId { get; set; }
+    public int? PatientId { get; set; }
+    public int? ReceptionistId { get; set; }
 }

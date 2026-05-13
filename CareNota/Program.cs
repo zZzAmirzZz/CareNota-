@@ -18,6 +18,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text;
 
+using Azure.Storage.Blobs;                                             
+      
+
+
 var Builder = WebApplication.CreateBuilder(args);
 
 // ── Database ────────────────────────────────────────────────────────────────
@@ -40,6 +44,21 @@ Builder.Services.AddIdentity<ApplicationUser, IdentityRole>(Options =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
+
+
+
+
+////   AZURE BLOB
+//Builder.Services.AddSingleton(
+//   new BlobServiceClient(
+//       Builder.Configuration["AzureBlob:ConnectionString"]));
+
+////  HTTPCLIENT → PYTHON FASTAPI                                   
+//Builder.Services.AddHttpClient("PythonFastAPI", Client =>
+//{
+//    Client.BaseAddress = new Uri(Builder.Configuration["PythonAI:BaseUrl"]!);
+//    Client.Timeout = TimeSpan.FromMinutes(5);
+//});
 
 
 // ── Controllers + Swagger ───────────────────────────────────────────────────
@@ -81,8 +100,11 @@ Builder.Services.AddScoped<IDiagnosisRepository, DiagnosisRepository>();
 Builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
 Builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
 Builder.Services.AddScoped<ILabTestRepository, LabTestRepository>();
+// DI registrations
+Builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 
 
+//Builder.Services.AddScoped<IAudioRepository, AudioRepository>();
 
 // ── Services ────────────────────────────────────────────────────────────────
 
@@ -95,8 +117,8 @@ Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
 Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-
-
+//Builder.Services.AddScoped<IAudioService, AudioService>();
+Builder.Services.AddScoped<IAdminService, AdminService>();
 
 Builder.Services.AddAutoMapper(typeof(MappingProfile));
 
@@ -143,46 +165,54 @@ Builder.Services.AddAuthentication(options =>
 
 // ── Build App ───────────────────────────────────────────────────────────────
 var App = Builder.Build();
-
-// Seed Roles + Admin
+// admin 
+// ====================== DATA SEEDING ======================
+// Program.cs — seeding block
 using (var scope = App.Services.CreateScope())
 {
-    // Run migrations
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
-
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
-    // Create roles
-    string[] roles = { "admin", "doctor", "patient", "receptionist" };
-    foreach (var role in roles)
+    var services = scope.ServiceProvider;
+    try
     {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var context = services.GetRequiredService<ApplicationDbContext>(); 
+        var logger = services.GetRequiredService<ILogger<Program>>();
+
+        await DataSeeder.SeedAsync(userManager, roleManager, context, logger);
     }
-
-
-
-
-    // Create first admin
-    var adminEmail = "admin@carenota.com";
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    catch (Exception ex)
     {
-        var admin = new ApplicationUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            FullName = "Super Admin",
-            Gender = "N/A",
-            EmailConfirmed = true
-        };
-
-        var result = await userManager.CreateAsync(admin, "Admin@123456");
-        if (result.Succeeded)
-            await userManager.AddToRoleAsync(admin, "admin");
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "❌ An error occurred while seeding the database.");
     }
 }
+//// Seed Roles + Admin
+//using (var scope = App.Services.CreateScope())
+//{
+//    // Run migrations
+//    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//    db.Database.Migrate();
+
+//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+//    // Create roles
+//    string[] roles = { "admin", "doctor", "patient", "receptionist" };
+//    foreach (var role in roles)
+//    {
+//        if (!await roleManager.RoleExistsAsync(role))
+//            await roleManager.CreateAsync(new IdentityRole(role));
+//    }
+
+
+
+///
+
+//        var result = await userManager.CreateAsync(admin, "Admin@123456");
+//        if (result.Succeeded)
+//            await userManager.AddToRoleAsync(admin, "admin");
+//    }
+//}
 // ── Middleware Pipeline ─────────────────────────────────────────────────────
 if (App.Environment.IsDevelopment())
 {

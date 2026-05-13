@@ -18,6 +18,7 @@ public class ApplicationUser : IdentityUser
     public Doctor? Doctor { get; set; }
     public Patient? Patient { get; set; }
     public Receptionist? Receptionist { get; set; }
+    public Admin? Admin { get; set; } 
     //Email, PhoneNumber, PasswordHash come free from IdentityUser — don't redeclare them.
 
 
