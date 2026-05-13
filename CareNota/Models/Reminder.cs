@@ -12,8 +12,8 @@ public class Reminder
 
     // FKs
     public int PatientID { get; set; }
-    public int PrescriptionID { get; set; }
-    public int AppointmentID { get; set; }
+    public int? PrescriptionID { get; set; }   // null if it's an appointment reminder
+    public int? AppointmentID { get; set; }    // null if it's a medication reminder
 
     // Navigation
     public Patient Patient { get; set; } = null!;

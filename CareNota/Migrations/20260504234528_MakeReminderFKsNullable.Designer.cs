@@ -4,6 +4,7 @@ using CareNota.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CareNota.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260504234528_MakeReminderFKsNullable")]
+    partial class MakeReminderFKsNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,29 +52,6 @@ namespace CareNota.Migrations
                     b.HasIndex("VisitID");
 
                     b.ToTable("AISummaries");
-                });
-
-            modelBuilder.Entity("CareNota.Models.Admin", b =>
-                {
-                    b.Property<int>("AdminId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AdminId"));
-
-                    b.Property<bool>("IsFirstLogin")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("AdminId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("Admins");
                 });
 
             modelBuilder.Entity("CareNota.Models.ApplicationUser", b =>
@@ -706,17 +686,6 @@ namespace CareNota.Migrations
                     b.Navigation("Visit");
                 });
 
-            modelBuilder.Entity("CareNota.Models.Admin", b =>
-                {
-                    b.HasOne("CareNota.Models.ApplicationUser", "User")
-                        .WithOne("Admin")
-                        .HasForeignKey("CareNota.Models.Admin", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("CareNota.Models.Appointment", b =>
                 {
                     b.HasOne("CareNota.Models.Doctor", "Doctor")
@@ -948,8 +917,6 @@ namespace CareNota.Migrations
 
             modelBuilder.Entity("CareNota.Models.ApplicationUser", b =>
                 {
-                    b.Navigation("Admin");
-
                     b.Navigation("Doctor");
 
                     b.Navigation("Patient");
