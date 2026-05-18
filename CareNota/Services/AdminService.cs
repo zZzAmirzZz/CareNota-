@@ -1,103 +1,74 @@
-﻿using CareNota.Data;
+﻿// AdminService.cs
+using AutoMapper;
 using CareNota.DTOs.Admin;
+using CareNota.Services.Interfaces;
+using CareNota.Repositories.Interfaces;
 using CareNota.Models;
-using Microsoft.AspNetCore.Identity;
+
+namespace CareNota.Services;
 
 public class AdminService : IAdminService
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
-    private readonly ApplicationDbContext _context; // only if you have a Doctor/Receptionist table
+    private readonly IAdminRepository _AdminRepository;
+    private readonly IMapper _Mapper;
 
+    // ✅ UserManager removed — repository handles all Identity calls
     public AdminService(
-        UserManager<ApplicationUser> userManager,
-        RoleManager<IdentityRole> roleManager,
-        ApplicationDbContext context)
+        IAdminRepository AdminRepository,
+        IMapper Mapper)
     {
-        _userManager = userManager;
-        _roleManager = roleManager;
-        _context = context;
+        _AdminRepository = AdminRepository;
+        _Mapper = Mapper;
     }
 
-    public async Task<AccountCreatedResponseDto> CreateDoctorAccountAsync(CreateDoctorDto dto)
+    // ── Get Profile ──────────────────────────────────────────────────────────
+
+    public async Task<AdminProfileDto?> GetProfileAsync(string UserId)
     {
-        // 1. Check if email already exists
-        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-        if (existingUser != null)
-            throw new InvalidOperationException("A user with this email already exists.");
+        var User = await _AdminRepository.GetUserByIdAsync(UserId);
+        if (User is null) return null;
 
-        // 2. Create the ApplicationUser
-        var user = new ApplicationUser
-        {
-            UserName = dto.Email,
-            Email = dto.Email,
-            FullName = dto.FullName,
-            PhoneNumber = dto.PhoneNumber,
-            EmailConfirmed = true // Admin-created accounts are pre-confirmed
-        };
-
-        var result = await _userManager.CreateAsync(user, dto.Password);
-        if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
-
-        // 3. Assign the Doctor role
-        await _userManager.AddToRoleAsync(user, "doctor");
-
-        // 4. Create the linked Doctor record
-        var doctor = new Doctor
-        {
-            UserId = user.Id,
-            Specialty = dto.Specialization,
-           
-        };
-        _context.Doctors.Add(doctor);
-        await _context.SaveChangesAsync();
-
-        return new AccountCreatedResponseDto
-        {
-            UserId = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            Role = "doctor",
-            Message = "Doctor account created successfully."
-        };
+        return _Mapper.Map<AdminProfileDto>(User);
     }
 
-    public async Task<AccountCreatedResponseDto> CreateReceptionistAccountAsync(CreateReceptionistDto dto)
+    // ── Update Profile ────────────────────────────────────────────────────────
+
+    public async Task<bool> UpdateProfileAsync(string UserId, UpdateAdminProfileDto Dto)
     {
-        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-        if (existingUser != null)
-            throw new InvalidOperationException("A user with this email already exists.");
+        var User = await _AdminRepository.GetUserByIdAsync(UserId);
+        if (User is null) return false;
 
-        var user = new ApplicationUser
+        User.FullName = Dto.FullName;
+        User.PhoneNumber = Dto.PhoneNumber;
+        User.Gender = Dto.Gender;
+
+        // ✅ Now goes through the repository, not UserManager directly
+        var Result = await _AdminRepository.UpdateUserAsync(User);
+        return Result.Succeeded;
+    }
+
+    // ── Change Password ───────────────────────────────────────────────────────
+
+    public async Task<(bool Success, string Error)> ChangePasswordAsync(
+        string UserId, ChangePasswordDto Dto)
+    {
+        if (Dto.NewPassword != Dto.ConfirmNewPassword)
+            return (false, "New password and confirmation do not match.");
+
+        var User = await _AdminRepository.GetUserByIdAsync(UserId);
+        if (User is null)
+            return (false, "User not found.");
+
+        // ✅ Now goes through the repository, not UserManager directly
+        var Result = await _AdminRepository.ChangePasswordAsync(
+            User, Dto.CurrentPassword, Dto.NewPassword);
+
+        if (!Result.Succeeded)
         {
-            UserName = dto.Email,
-            Email = dto.Email,
-            FullName = dto.FullName,
-            PhoneNumber = dto.PhoneNumber,
-            EmailConfirmed = true
-        };
+            var Errors = string.Join(" | ", Result.Errors.Select(E => E.Description));
+            return (false, Errors);
+        }
 
-        var result = await _userManager.CreateAsync(user, dto.Password);
-        if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
-
-        await _userManager.AddToRoleAsync(user, "receptionist");
-
-        var receptionist = new Receptionist
-        {
-            UserId = user.Id
-        };
-        _context.Receptionists.Add(receptionist);
-        await _context.SaveChangesAsync();
-
-        return new AccountCreatedResponseDto
-        {
-            UserId = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            Role = "receptionist",
-            Message = "Receptionist account created successfully."
-        };
+        return (true, string.Empty);
     }
 }

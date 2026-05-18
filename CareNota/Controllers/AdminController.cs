@@ -1,52 +1,62 @@
-﻿using CareNota.DTOs.Admin;
+﻿// AdminController.cs
+using CareNota.Services.Interfaces;
+using CareNota.DTOs.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace CareNota.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-[Authorize(Roles = "admin")]   // 🔒 Only admins can hit any endpoint here
+[Route("api/admin")]
+[Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {
-    private readonly IAdminService _adminService;
+    private readonly IAdminService _AdminService;
 
-    public AdminController(IAdminService adminService)
+    public AdminController(IAdminService AdminService)
+        => _AdminService = AdminService;
+
+    private string CurrentUserId
+        => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+    // ── GET api/admin/profile ─────────────────────────────────────────────────
+
+    /// <summary>Returns the current admin's profile.</summary>
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfile()
     {
-        _adminService = adminService;
+        var Profile = await _AdminService.GetProfileAsync(CurrentUserId);
+        if (Profile is null)
+            return NotFound(new { Message = "Admin profile not found." });
+
+        return Ok(Profile);
     }
 
-    /// <summary>Creates a new doctor account.</summary>
-    [HttpPost("create-doctor")]
-    public async Task<IActionResult> CreateDoctor([FromBody] CreateDoctorDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+    // ── PUT api/admin/profile ─────────────────────────────────────────────────
 
-        try
-        {
-            var result = await _adminService.CreateDoctorAccountAsync(dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+    /// <summary>Updates FullName, PhoneNumber, Gender.</summary>
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateAdminProfileDto Dto)
+    {
+        var Success = await _AdminService.UpdateProfileAsync(CurrentUserId, Dto);
+        if (!Success)
+            return BadRequest(new { Message = "Profile update failed." });
+
+        return Ok(new { Message = "Profile updated successfully." });
     }
 
-    /// <summary>Creates a new receptionist account.</summary>
-    [HttpPost("create-receptionist")]
-    public async Task<IActionResult> CreateReceptionist([FromBody] CreateReceptionistDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+    // ── PUT api/admin/change-password ─────────────────────────────────────────
 
-        try
-        {
-            var result = await _adminService.CreateReceptionistAccountAsync(dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+    /// <summary>Changes the current admin's password.</summary>
+    [HttpPut("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto Dto)
+    {
+        var (Success, Error) = await _AdminService.ChangePasswordAsync(CurrentUserId, Dto);
+
+        if (!Success)
+            return BadRequest(new { Message = Error });
+
+        return Ok(new { Message = "Password changed successfully." });
     }
 }
