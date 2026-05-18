@@ -94,25 +94,58 @@ public class AuthService(
     private async Task<AuthResponseDto> BuildAuthResponseAsync(ApplicationUser User)
     {
         var Roles = await UserManager.GetRolesAsync(User);
+
         var AccessToken = GenerateAccessToken(User, Roles);
         var NewRefreshToken = GenerateRefreshToken();
 
         User.RefreshToken = NewRefreshToken;
+
         User.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(
             int.Parse(Configuration["Jwt:RefreshTokenExpiryDays"]!));
+
         await UserManager.UpdateAsync(User);
 
-        return new AuthResponseDto
+        var Response = new AuthResponseDto
         {
             AccessToken = AccessToken,
             RefreshToken = NewRefreshToken,
+
             AccessTokenExpiry = DateTime.UtcNow.AddMinutes(
                 int.Parse(Configuration["Jwt:ExpiryMinutes"]!)),
+
             UserId = User.Id,
             Email = User.Email!,
             FullName = User.FullName,
+
             Roles = Roles
         };
+
+        // Get integer profile ID based on role
+        if (Roles.Contains(RoleSeeder.Doctor))
+        {
+            var Doctor = await Context.Doctors
+                .FirstOrDefaultAsync(d => d.UserId == User.Id);
+
+            Response.DoctorId = Doctor?.DoctorID;
+        }
+
+        else if (Roles.Contains(RoleSeeder.Patient))
+        {
+            var Patient = await Context.Patients
+                .FirstOrDefaultAsync(p => p.UserId == User.Id);
+
+            Response.PatientId = Patient?.PatientID;
+        }
+
+        else if (Roles.Contains(RoleSeeder.Receptionist))
+        {
+            var Receptionist = await Context.Receptionists
+                .FirstOrDefaultAsync(r => r.UserId == User.Id);
+
+            Response.ReceptionistId = Receptionist?.ReceptionistID;
+        }
+
+        return Response;
     }
 
     private string GenerateAccessToken(ApplicationUser User, IList<string> Roles)

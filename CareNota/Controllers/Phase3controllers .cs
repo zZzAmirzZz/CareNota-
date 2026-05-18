@@ -14,7 +14,7 @@ namespace CareNota.Controllers;
 // ══════════════════════════════════════════════════════════════════════════════
 [ApiController]
 [Route("Api/[controller]")]
-[Authorize]
+//[Authorize]
 public class VisitController : ControllerBase
 {
     private readonly IVisitService _Service;
@@ -23,13 +23,13 @@ public class VisitController : ControllerBase
 
     // GET Api/Visit
     [HttpGet]
-    [Authorize(Roles = "Doctor,Receptionist")]
+    //[Authorize(Roles = "Doctor,Receptionist")]
     public async Task<IActionResult> GetAll()
         => Ok(await _Service.GetAllAsync());
 
     // GET Api/Visit/{id}
     [HttpGet("{Id:int}")]
-    [Authorize(Roles = "Doctor,Receptionist,Patient")]
+    //[Authorize(Roles = "Doctor,Receptionist,Patient")]
     public async Task<IActionResult> GetById(int Id)
     {
         var Visit = await _Service.GetByIdAsync(Id);
@@ -38,7 +38,7 @@ public class VisitController : ControllerBase
 
     // GET Api/Visit/{id}/Details
     [HttpGet("{Id:int}/Details")]
-    [Authorize(Roles = "Doctor,Receptionist,Patient")]
+    //[Authorize(Roles = "Doctor,Receptionist,Patient")]
     public async Task<IActionResult> GetDetails(int Id)
     {
         var Visit = await _Service.GetDetailsAsync(Id);
@@ -47,13 +47,13 @@ public class VisitController : ControllerBase
 
     // GET Api/Visit/Patient/{patientId}
     [HttpGet("Patient/{PatientId:int}")]
-    [Authorize(Roles = "Doctor,Receptionist,Patient")]
+    //[Authorize(Roles = "Doctor,Receptionist,Patient")]
     public async Task<IActionResult> GetByPatient(int PatientId)
         => Ok(await _Service.GetByPatientIdAsync(PatientId));
 
     // GET Api/Visit/Appointment/{appointmentId}
     [HttpGet("Appointment/{AppointmentId:int}")]
-    [Authorize(Roles = "Doctor,Receptionist")]
+    //[Authorize(Roles = "Doctor,Receptionist")]
     public async Task<IActionResult> GetByAppointment(int AppointmentId)
     {
         var Visit = await _Service.GetByAppointmentIdAsync(AppointmentId);
@@ -64,7 +64,7 @@ public class VisitController : ControllerBase
 
     // POST Api/Visit
     [HttpPost]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> Create([FromBody] CreateVisitDto Dto)
     {
         try
@@ -78,7 +78,7 @@ public class VisitController : ControllerBase
 
     // PUT Api/Visit/{id}
     [HttpPut("{Id:int}")]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> Update(int Id, [FromBody] UpdateVisitDto Dto)
     {
         try
@@ -91,7 +91,7 @@ public class VisitController : ControllerBase
 
     // DELETE Api/Visit/{id}
     [HttpDelete("{Id:int}")]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> Delete(int Id)
     {
         try
@@ -396,7 +396,7 @@ public class MedicationController : ControllerBase
 // ══════════════════════════════════════════════════════════════════════════════
 [ApiController]
 [Route("Api/[controller]")]
-[Authorize]
+//[Authorize]
 public class LabTestController : ControllerBase
 {
     private readonly ILabTestService _Service;
@@ -421,13 +421,13 @@ public class LabTestController : ControllerBase
 
     // GET Api/LabTest/Visit/{visitId}
     [HttpGet("Visit/{VisitId:int}")]
-    [Authorize(Roles = "Doctor,Receptionist,Patient")]
+    //[Authorize(Roles = "Doctor,Receptionist,Patient")]
     public async Task<IActionResult> GetByVisit(int VisitId)
         => Ok(await _Service.GetByVisitIdAsync(VisitId));
 
     // POST Api/LabTest  ← order a new lab test
     [HttpPost]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> Create([FromBody] CreateLabTestDto Dto)
     {
         try

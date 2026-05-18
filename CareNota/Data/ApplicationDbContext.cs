@@ -13,6 +13,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Doctor> Doctors { get; set; }
     public DbSet<Patient> Patients { get; set; }
     public DbSet<Receptionist> Receptionists { get; set; }
+    public DbSet<Admin> Admins { get; set; }
     public DbSet<AudioRecord> AudioRecords { get; set; }
     public DbSet<MedicalHistory> MedicalHistories { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
@@ -30,6 +31,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder Builder)
     {
         base.OnModelCreating(Builder);
+
+        // ── ApplicationUser → Admin (1-to-1) ─────────────────────────────────
+        Builder.Entity<Admin>()
+    .HasOne(A => A.User)
+    .WithOne(U => U.Admin)
+    .HasForeignKey<Admin>(A => A.UserId)
+    .OnDelete(DeleteBehavior.Cascade);
 
         // ── ApplicationUser → Doctor (1-to-1) ─────────────────────────────────
         Builder.Entity<Doctor>()
