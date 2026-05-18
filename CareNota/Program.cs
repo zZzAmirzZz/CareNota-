@@ -96,6 +96,7 @@ Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
 Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+Builder.Services.AddScoped<IAdminService, AdminService>();
 // Email
 Builder.Services.Configure<EmailSettings>(
 Builder.Configuration.GetSection("EmailSettings"));
