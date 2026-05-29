@@ -98,7 +98,7 @@ public class SummaryController : ControllerBase
     /// Body: { "followUpDate": "2026-06-15T00:00:00Z" }  (followUpDate is optional)
     /// </summary>
     [HttpPost("summary/approve")]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ApproveSummary(
@@ -136,7 +136,7 @@ public class SummaryController : ControllerBase
     ///   - followUpDate                        (from Visit, set by doctor on approval)
     /// </summary>
     [HttpGet("patient-summary")]
-    [Authorize(Roles = "Patient,Doctor")]
+    //[Authorize(Roles = "Patient,Doctor")]
     [ProducesResponseType(typeof(PatientSummaryViewDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
