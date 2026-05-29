@@ -19,5 +19,5 @@ public class RegisterDto
     public string Password { get; set; } = string.Empty;
 
     [Required]
-    public string Role { get; set; } = string.Empty; // "Doctor" | "Patient" | "Receptionist"
+    public string Role { get; set; } = string.Empty; // "Doctor" | "Patient" | "Receptionist" | "Admin"
 }

@@ -19,7 +19,7 @@ public class AuthService(
 {
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto Dto)
     {
-        // Validate role
+        //// Validate role
         string[] AllowedRoles = [RoleSeeder.Doctor, RoleSeeder.Patient, RoleSeeder.Receptionist];
         if (!AllowedRoles.Contains(Dto.Role))
             throw new ArgumentException($"Invalid role. Allowed: {string.Join(", ", AllowedRoles)}");

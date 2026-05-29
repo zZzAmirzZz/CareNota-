@@ -44,7 +44,7 @@ public class AuthController(IAuthService AuthService) : ControllerBase
         catch (UnauthorizedAccessException Ex) { return Unauthorized(new { Ex.Message }); }
     }
 
-    [Authorize]
+    //[Authorize]
     [HttpPost("Revoke")]
     public async Task<IActionResult> Revoke()
     {

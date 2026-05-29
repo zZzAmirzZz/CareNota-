@@ -152,15 +152,15 @@ public class AppointmentService : IAppointmentService
         await _appointmentRepo.AddAsync(appointment);
         await _appointmentRepo.SaveChangesAsync();
 
-        // Fire confirmation email in background with its own scope
-        var appointmentId = appointment.AppointmentID;
-        _ = Task.Run(async () =>
-        {
-            using var scope = _scopeFactory.CreateScope();
-            var reminderService = scope.ServiceProvider
-                .GetRequiredService<IReminderService>();
-            await reminderService.SendAppointmentConfirmationAsync(appointmentId);
-        });
+        //// Fire confirmation email in background with its own scope
+        //var appointmentId = appointment.AppointmentID;
+        //_ = Task.Run(async () =>
+        //{
+        //    using var scope = _scopeFactory.CreateScope();
+        //    var reminderService = scope.ServiceProvider
+        //        .GetRequiredService<IReminderService>();
+        //    await reminderService.SendAppointmentConfirmationAsync(appointmentId);
+        //});
 
         var created = await _appointmentRepo.GetWithVisitAsync(appointment.AppointmentID);
         return _mapper.Map<AppointmentDto>(created!);
@@ -209,13 +209,13 @@ public class AppointmentService : IAppointmentService
         await _appointmentRepo.SaveChangesAsync();
 
         // Fire cancellation email in background with its own scope
-        _ = Task.Run(async () =>
-        {
-            using var scope = _scopeFactory.CreateScope();
-            var reminderService = scope.ServiceProvider
-                .GetRequiredService<IReminderService>();
-            await reminderService.SendAppointmentCancellationAsync(appointmentId);
-        });
+        //_ = Task.Run(async () =>
+        //{
+        //    using var scope = _scopeFactory.CreateScope();
+        //    var reminderService = scope.ServiceProvider
+        //        .GetRequiredService<IReminderService>();
+        //    await reminderService.SendAppointmentCancellationAsync(appointmentId);
+        //});
     }
 
     // ── DELETE ──────────────────────────────────────

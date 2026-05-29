@@ -7,10 +7,13 @@ public class Visit
     [Key]
     public int VisitID { get; set; }
     public DateTime VisitDate { get; set; }
-    public string Subjective { get; set; } = string.Empty;
-    public string Objective { get; set; } = string.Empty;
-    public string Assessment { get; set; } = string.Empty;
-    public string Plan { get; set; } = string.Empty;
+    public string? Subjective { get; set; } = string.Empty;
+    public string? Objective { get; set; } = string.Empty;
+    public string? Assessment { get; set; } = string.Empty;
+    public string? Plan { get; set; } = string.Empty;
+
+    public string? WhenToSeekHelp { get; set; }
+    public DateTime? FollowUpDate { get; set; }
 
     // FK
     public int AppointmentID { get; set; }
