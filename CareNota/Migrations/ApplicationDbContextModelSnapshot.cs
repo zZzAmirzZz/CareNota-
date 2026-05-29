@@ -30,6 +30,9 @@ namespace CareNota.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AISummaryID"));
 
+                    b.Property<float>("DoctorRating")
+                        .HasColumnType("real");
+
                     b.Property<string>("SummaryText")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -521,9 +524,6 @@ namespace CareNota.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("FollowUpDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Objective")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -538,9 +538,6 @@ namespace CareNota.Migrations
 
                     b.Property<DateTime>("VisitDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("WhenToSeekHelp")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("VisitID");
 

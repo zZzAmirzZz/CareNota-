@@ -5,18 +5,24 @@ namespace CareNota.Repositories.Interfaces;
 // ══════════════════════════════════════════════════════════════════════════════
 // IAudioRepository
 // ══════════════════════════════════════════════════════════════════════════════
-
-public interface IAudioRepository
+public interface IAudioRepository : IRepository<AudioRecord>
 {
-    Task<AudioRecord?> GetByIdAsync(int audioId);
-    Task<AudioRecord?> GetByVisitIdAsync(int visitId);
+    Task<AudioRecord?> GetByVisitIdAsync(int VisitId);
 
-    /// <summary>Returns all records whose DeletionAt is in the past and the blob has not been deleted yet.</summary>
-    Task<List<AudioRecord>> GetPendingDeletionsAsync();
-
-    Task AddAsync(AudioRecord audioRecord);
-    void Delete(AudioRecord audioRecord);
-    Task SaveAsync();
+    // Returns all AudioRecords whose DeletionAt <= now (ready to be deleted)
+    Task<IEnumerable<AudioRecord>> GetExpiredRecordsAsync();
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// IAISummaryRepository
+// ══════════════════════════════════════════════════════════════════════════════
+//public interface IAISummaryRepository : IRepository<AISummary>
+//{
+//    Task<IEnumerable<AISummary>> GetByVisitIdAsync(int VisitId);
 
+//    // Get the Doctor-facing summary for a visit
+//    Task<AISummary?> GetDoctorSummaryAsync(int VisitId);
+
+//    // Get the Patient-facing summary for a visit
+//    Task<AISummary?> GetPatientSummaryAsync(int VisitId);
+//}

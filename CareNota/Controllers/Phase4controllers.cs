@@ -1,64 +1,48 @@
-﻿using CareNota.DTOs.Audio;
-using CareNota.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿//using CareNota.DTOs.Audio;
+//using CareNota.Services.Interfaces;
+//using Microsoft.AspNetCore.Authorization;
+//using Microsoft.AspNetCore.Mvc;
 
-namespace CareNota.Controllers;
+//namespace CareNota.Controllers;
 
-[ApiController]
-[Route("api/audio")]
-//[Authorize]
-public class AudioController : ControllerBase
-{
-    private readonly IAudioService _audioService;
+//// ══════════════════════════════════════════════════════════════════════════════
+//// AudioController
+//// ══════════════════════════════════════════════════════════════════════════════
+//[ApiController]
+//[Route("Api/[controller]")]
+////[Authorize]
+//public class AudioController : ControllerBase
+//{
+//    private readonly IAudioService _AudioService;
 
-    public AudioController(IAudioService audioService)
-    {
-        _audioService = audioService;
-    }
+//    public AudioController(IAudioService AudioService)
+//        => _AudioService = AudioService;
 
-    [HttpPost("upload")]
-    //[Authorize(Roles = "Doctor")]
-    [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(AudioRecordResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> UploadAudio([FromForm] AudioUploadDto dto)
-    {
-        try
-        {
-            var result = await _audioService.UploadAudioAsync(
-                dto.AudioFile,
-                dto.VisitId);
+//    // POST Api/Audio/Upload/{visitId}
+//    // Doctor uploads the audio recording for a visit
+//    [HttpPost("Upload/{VisitId:int}")]
+//    //[Authorize(Roles = "Doctor")]
+//    [Consumes("multipart/form-data")]
+//    public async Task<IActionResult> Upload(int VisitId, [FromForm] AudioUploadDto Dto)
+//    {
+//        try
+//        {
+//            var Result = await _AudioService.UploadAsync(VisitId, Dto.AudioFile);
+//            return Ok(Result);
+//        }
+//        catch (KeyNotFoundException Ex) { return NotFound(new { Ex.Message }); }
+//        catch (InvalidOperationException Ex) { return Conflict(new { Ex.Message }); }
+//    }
 
-            return Ok(result);
-        }
-        catch (FluentValidation.ValidationException ex)
-        {
-            return BadRequest(new
-            {
-                Errors = ex.Message
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new
-            {
-                Message = "Internal server error",
-                Error = ex.Message
-            });
-        }
-    }
-    [HttpGet("{visitId:int}/status")]
-    //[Authorize(Roles = "Doctor")]
-    public IActionResult GetStatus([FromRoute] int visitId)
-    {
-        return Ok(new
-        {
-            VisitId = visitId,
-            SummaryEndpoint = $"/api/visits/{visitId}/summary",
-            Message = "Poll the summary endpoint to check AI processing status."
-        });
-    }
-}
+//    // GET Api/Audio/Status/{visitId}
+//    // Check processing status: "Processing" | "Done"
+//    [HttpGet("Status/{VisitId:int}")]
+//    //[Authorize(Roles = "Doctor,Receptionist")]
+//    public async Task<IActionResult> GetStatus(int VisitId)
+//    {
+//        var Record = await _AudioService.GetByVisitIdAsync(VisitId);
+//        return Record is null
+//            ? NotFound(new { Message = $"No audio found for visit {VisitId}." })
+//            : Ok(Record);
+//    }
+//}

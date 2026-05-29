@@ -1,9 +1,4 @@
-using Azure.Storage.Blobs;
-using CareNota.API.BackgroundJobs;
-using CareNota.BLL.Validators;
 using CareNota.Data;
-using CareNota.DTOs.Audio;
-using CareNota.Interfaces;
 using CareNota.Mappings;
 using CareNota.Models;
 using CareNota.Repositories;
@@ -23,8 +18,9 @@ using Microsoft.OpenApi;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-                                           
 
+using Azure.Storage.Blobs;                                             
+      
 
 
 var Builder = WebApplication.CreateBuilder(args);
@@ -51,20 +47,23 @@ Builder.Services.AddIdentity<ApplicationUser, IdentityRole>(Options =>
 .AddDefaultTokenProviders();
 
 
-// ── Azure Blob Storage ────────────────────────────────────────────────────────
-Builder.Services.AddSingleton(_ =>
-    new BlobServiceClient(Builder.Configuration["AzureBlob:ConnectionString"]));
 
-// ── HttpClient for AI (Python FastAPI) ───────────────────────────────────────
-Builder.Services.AddHttpClient<IAIService, AIService>(Client =>
-{
-    Client.BaseAddress = new Uri(
-        Builder.Configuration["AIService:BaseUrl"] ?? "http://127.0.0.1:8000");
-    Client.Timeout = TimeSpan.FromMinutes(
-        Builder.Configuration.GetValue<int>("AIService:TimeoutMinutes", 5));
-});// ── Controllers + Swagger ───────────────────────────────────────────────────
+
+////   AZURE BLOB
+//Builder.Services.AddSingleton(
+//   new BlobServiceClient(
+//       Builder.Configuration["AzureBlob:ConnectionString"]));
+
+////  HTTPCLIENT → PYTHON FASTAPI                                   
+//Builder.Services.AddHttpClient("PythonFastAPI", Client =>
+//{
+//    Client.BaseAddress = new Uri(Builder.Configuration["PythonAI:BaseUrl"]!);
+//    Client.Timeout = TimeSpan.FromMinutes(5);
+//});
+
+
+// ── Controllers + Swagger ───────────────────────────────────────────────────
 //Builder.Services.AddControllers();
-
 
 Builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -77,22 +76,21 @@ Builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "CareNota API", Version = "v1" });
 
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter your JWT token below."
-    });
-
-    options.AddSecurityRequirement(document => new()
-    {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
-    });
+options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+{
+    Name = "Authorization",
+    Type = SecuritySchemeType.Http,
+    Scheme = "Bearer",
+    BearerFormat = "JWT",
+    In = ParameterLocation.Header,
+    Description = "Enter your JWT token below."
 });
 
+options.AddSecurityRequirement(document => new()
+{
+    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+});
+});
 
 // ── Repositories ────────────────────────────────────────────────────────────
 Builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
@@ -105,10 +103,9 @@ Builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
 Builder.Services.AddScoped<ILabTestRepository, LabTestRepository>();
 // DI registrations
 Builder.Services.AddScoped<IAdminRepository, AdminRepository>();
-Builder.Services.AddScoped<IAudioRepository, AudioRepository>();
-Builder.Services.AddScoped<IAISummaryRepository, AISummaryRepository>();
 
 
+//Builder.Services.AddScoped<IAudioRepository, AudioRepository>();
 
 // ── Services ────────────────────────────────────────────────────────────────
 
@@ -121,24 +118,12 @@ Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
 Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-//Builder.Services.AddScoped<IAudioService, AudioService>();
 Builder.Services.AddScoped<IAdminService, AdminService>();
 // Email
 Builder.Services.Configure<EmailSettings>(
 Builder.Configuration.GetSection("EmailSettings"));
 Builder.Services.AddScoped<IEmailService, EmailService>();
 Builder.Services.AddScoped<IReminderService, ReminderService>();
-
-
-// ── FluentValidation ─────────────────────────────────────────────────────────
-
-Builder.Services.AddAutoMapper(typeof(MappingProfile));
-Builder.Services.AddFluentValidationAutoValidation();
-Builder.Services.AddValidatorsFromAssemblyContaining<CreateAppointmentValidator>();
-Builder.Services.AddScoped<IValidator<AudioUploadDto>, AudioUploadValidator>();
-
-// ── Background Job ────────────────────────────────────────────────────────────
-Builder.Services.AddHostedService<AudioCleanupJob>();
 
 // Hangfire
 Builder.Services.AddHangfire(config =>
@@ -147,15 +132,22 @@ Builder.Services.AddHangfire(config =>
 Builder.Services.AddHangfireServer();
 
 
+Builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+// ── FluentValidation ─────────────────────────────────────────────────────────
+Builder.Services.AddFluentValidationAutoValidation();
+Builder.Services.AddValidatorsFromAssemblyContaining<CreateAppointmentValidator>();
 
 // ── File Upload Config ──────────────────────────────────────────────────────
 Builder.Services.Configure<FormOptions>(Options =>
-{   
-    Options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB
+{
+    Options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB
 });
 
 Builder.Services.AddAutoMapper(typeof(Program));
 
+
+// CORS
 Builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",
@@ -167,16 +159,6 @@ Builder.Services.AddCors(options =>
                 .AllowAnyMethod();
         });
 });
-// CORS
-
-//Builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("AllowAll",
-//        policy => policy
-//            .AllowAnyOrigin()
-//            .AllowAnyMethod()
-//            .AllowAnyHeader());
-//});
 // ── JWT Authentication ───────────────────────────────────────────────────────
 Builder.Services.AddAuthentication(options =>
 {
@@ -197,8 +179,6 @@ Builder.Services.AddAuthentication(options =>
 
 // ── Build App ───────────────────────────────────────────────────────────────
 var App = Builder.Build();
-
-App.UseStaticFiles();//
 // admin 
 // ====================== DATA SEEDING ======================
 // Program.cs — seeding block
@@ -220,10 +200,52 @@ using (var scope = App.Services.CreateScope())
         logger.LogError(ex, "❌ An error occurred while seeding the database.");
     }
 }
+//// Seed Roles + Admin
+//using (var scope = App.Services.CreateScope())
+//{
+//    // Run migrations
+//    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//    db.Database.Migrate();
+
+//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+//    // Create roles
+//    string[] roles = { "admin", "doctor", "patient", "receptionist" };
+//    foreach (var role in roles)
+//    {
+//        if (!await roleManager.RoleExistsAsync(role))
+//            await roleManager.CreateAsync(new IdentityRole(role));
+//    }
+
+
+
+///
+
+//        var result = await userManager.CreateAsync(admin, "Admin@123456");
+//        if (result.Succeeded)
+//            await userManager.AddToRoleAsync(admin, "admin");
+//    }
+//}
 // ── Middleware Pipeline ─────────────────────────────────────────────────────
 // Hangfire dashboard (access at /hangfire while in development)
 App.UseHangfireDashboard("/hangfire");
- 
+App.UseHangfireDashboard("/hangfire");
+
+RecurringJob.AddOrUpdate<IReminderService>(
+    "check-missed-appointments",
+    x => x.CheckMissedAppointmentsAsync(),
+    Cron.Hourly);
+
+RecurringJob.AddOrUpdate<IReminderService>(
+    "upcoming-appointment-reminders",
+    x => x.SendUpcomingAppointmentRemindersAsync(),
+    Cron.Hourly);
+
+RecurringJob.AddOrUpdate<IReminderService>(
+    "medication-reminders",
+    x => x.SendMedicationRemindersAsync(),
+    Cron.Hourly);
 
 if (App.Environment.IsDevelopment())
 {
@@ -231,33 +253,38 @@ if (App.Environment.IsDevelopment())
     App.UseSwaggerUI();
 }
 
-
-
-//App.UseHttpsRedirection();
-
+// ✅ Correct order — do not change this sequence
 App.UseRouting();
+App.UseCors("AllowAngular");          // 1️⃣ CORS first
+if (App.Environment.IsDevelopment())
+   
+App.UseAuthentication();          // 3️⃣ Who are you?  ← was completely missing
+App.UseAuthorization();           // 4️⃣ What can you do?
+App.MapControllers();             // 5️⃣ Route to controllers
 
-App.UseCors("AllowAngular");
+App.Run();
+// Schedule recurring jobs
+RecurringJob.AddOrUpdate<IReminderService>(
+    "check-missed-appointments",
+    x => x.CheckMissedAppointmentsAsync(),
+    Cron.Hourly);
 
-App.UseAuthentication();
-App.UseAuthorization();
+RecurringJob.AddOrUpdate<IReminderService>(
+    "upcoming-appointment-reminders",
+    x => x.SendUpcomingAppointmentRemindersAsync(),
+    Cron.Hourly);
 
-App.MapControllers();
-//// Schedule recurring jobs
-//RecurringJob.AddOrUpdate<IReminderService>(
-//    "check-missed-appointments",
-//    x => x.CheckMissedAppointmentsAsync(),
-//    Cron.Hourly);
+RecurringJob.AddOrUpdate<IReminderService>(
+    "medication-reminders",
+    x => x.SendMedicationRemindersAsync(),
+    Cron.Hourly); 
 
-//RecurringJob.AddOrUpdate<IReminderService>(
-//    "upcoming-appointment-reminders",
-//    x => x.SendUpcomingAppointmentRemindersAsync(),
-//    Cron.Hourly);
+if (App.Environment.IsDevelopment())
+{
+    App.UseSwagger();
+    App.UseSwaggerUI();
+}
 
-//RecurringJob.AddOrUpdate<IReminderService>(
-//    "medication-reminders",
-//    x => x.SendMedicationRemindersAsync(),
-//    Cron.Hourly);
 App.Run();
 
 
