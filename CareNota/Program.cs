@@ -121,15 +121,13 @@ Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
 Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-Builder.Services.AddScoped<IAudioService, AudioService>();
-Builder.Services.AddScoped<IAIService, AIService>();
-Builder.Services.AddScoped<ISummaryService, SummaryService>();
-//Builder.Services.AddScoped<IAdminService, AdminService>();
-//// Email
-//Builder.Services.Configure<EmailSettings>(
-//Builder.Configuration.GetSection("EmailSettings"));
-//Builder.Services.AddScoped<IEmailService, EmailService>();
-//Builder.Services.AddScoped<IReminderService, ReminderService>();
+//Builder.Services.AddScoped<IAudioService, AudioService>();
+Builder.Services.AddScoped<IAdminService, AdminService>();
+// Email
+Builder.Services.Configure<EmailSettings>(
+Builder.Configuration.GetSection("EmailSettings"));
+Builder.Services.AddScoped<IEmailService, EmailService>();
+Builder.Services.AddScoped<IReminderService, ReminderService>();
 
 
 // ── FluentValidation ─────────────────────────────────────────────────────────
