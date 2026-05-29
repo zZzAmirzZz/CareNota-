@@ -1,90 +1,176 @@
-﻿using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-using CareNota.DTOs.Audio;
-using CareNota.Interfaces;
-using CareNota.Models;
-using CareNota.Repositories.Interfaces;
-using CareNota.Services.Interfaces;
-using FluentValidation;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+﻿//using Azure.Storage.Blobs;
+//using Azure.Storage.Blobs.Models;
+//using CareNota.DTOs.Audio;
+//using CareNota.Models;
+//using CareNota.Repositories.Interfaces;
+//using CareNota.Services.Interfaces;
 
-namespace CareNota.Services;
+//namespace CareNota.Services;
 
-public class AudioService : IAudioService
-{
-    private readonly BlobServiceClient _blobServiceClient;
-    private readonly IAudioRepository _audioRepository;
-    private readonly IAIService _aiService;
-    private readonly IValidator<AudioUploadDto> _validator;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<AudioService> _logger;
+//public class AudioService : IAudioService
+//{
+//    private readonly IAudioRepository _AudioRepo;
+//    private readonly IVisitRepository _VisitRepo;
+//    //private readonly IAIService _AiService;
+//    private readonly BlobServiceClient _BlobClient;
+//    private readonly IConfiguration _Config;
+//    private readonly ILogger<AudioService> _Logger;
 
-    public AudioService(
-        BlobServiceClient blobServiceClient,
-        IAudioRepository audioRepository,
-        IAIService aiService,
-        IValidator<AudioUploadDto> validator,
-        IConfiguration configuration,
-        ILogger<AudioService> logger)
-    {
-        _blobServiceClient = blobServiceClient;
-        _audioRepository = audioRepository;
-        _aiService = aiService;
-        _validator = validator;
-        _configuration = configuration;
-        _logger = logger;
-    }
+//    // How long to keep the audio file after AI finishes (from appsettings)
+//    // "AudioSettings:RetentionHours" → default 1 hour
+//    private int RetentionHours =>
+//        int.Parse(_Config["AudioSettings:RetentionHours"] ?? "1");
 
-    public async Task<AudioRecordResponseDto> UploadAudioAsync(IFormFile file, int visitId)
-    {
-        var dto = new AudioUploadDto { AudioFile = file, VisitId = visitId };
-        var validationResult = await _validator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-            throw new ValidationException(string.Join("; ", validationResult.Errors));
+//    private string ContainerName =>
+//        _Config["AudioSettings:ContainerName"] ?? "carenota-audio";
 
-        // Upload to Azure Blob
-        var containerName = _configuration["AzureBlob:ContainerName"] ?? "audio-files";
-        var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
-        await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+//    public AudioService(
+//        IAudioRepository AudioRepo,
+//        IVisitRepository VisitRepo,
+//        //IAIService AiService,
+//        BlobServiceClient BlobClient,
+//        IConfiguration Config,
+//        ILogger<AudioService> Logger)
+//    {
+//        _AudioRepo = AudioRepo;
+//        _VisitRepo = VisitRepo;
+//        //_AiService = AiService;
+//        _BlobClient = BlobClient;
+//        _Config = Config;
+//        _Logger = Logger;
+//    }
 
-        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var blobName = $"visits/{visitId}/{Guid.NewGuid()}{extension}";
-        var blobClient = containerClient.GetBlobClient(blobName);
+//    // ── Upload ────────────────────────────────────────────────────────────────
+//    public async Task<AudioRecordDto> UploadAsync(int VisitId, IFormFile AudioFile)
+//    {
+//        // 1. Validate visit exists
+//        if (!await _VisitRepo.ExistsAsync(V => V.VisitID == VisitId))
+//            throw new KeyNotFoundException($"Visit {VisitId} not found.");
 
-        await using var stream = file.OpenReadStream();
-        await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = file.ContentType });
+//        // 2. Prevent duplicate uploads for the same visit
+//        var Existing = await _AudioRepo.GetByVisitIdAsync(VisitId);
+//        if (Existing is not null)
+//            throw new InvalidOperationException(
+//                "An audio file already exists for this visit. Delete it first.");
 
-        var audioUrl = blobClient.Uri.ToString();
+//        // 3. Upload file to Azure Blob Storage
+//        var BlobUrl = await UploadToBlobAsync(AudioFile, VisitId);
 
-        // Save AudioRecord
-        var deletionHours = _configuration.GetValue<int>("AudioSettings:DeletionDelayHours", 1);
-        var audioRecord = new AudioRecord
-        {
-            AudioFileURL = audioUrl,
-            VisitID = visitId,
-            CreatedAt = DateTime.UtcNow,
-            DeletionAt = DateTime.UtcNow.AddHours(deletionHours)
-        };
+//        // 4. Save AudioRecord with scheduled deletion time
+//        var AudioRecord = new AudioRecord
+//        {
+//            AudioFileURL = BlobUrl,
+//            CreatedAt = DateTime.UtcNow,
+//            DeletionAt = DateTime.UtcNow.AddHours(RetentionHours),
+//            VisitID = VisitId
+//        };
 
-        await _audioRepository.AddAsync(audioRecord);
-        await _audioRepository.SaveAsync();
+//        await _AudioRepo.AddAsync(AudioRecord);
+//        await _AudioRepo.SaveChangesAsync();
 
-        // Fire AI processing (non-blocking)
-        _ = Task.Run(async () =>
-        {
-            try { await _aiService.ProcessAudioAsync(audioUrl, visitId); }
-            catch (Exception ex) { _logger.LogError(ex, "AI processing failed for Visit {VisitId}", visitId); }
-        });
+//        _Logger.LogInformation(
+//            "Audio uploaded for Visit {VisitId}. Blob: {Url}. Scheduled deletion: {Time}",
+//            VisitId, BlobUrl, AudioRecord.DeletionAt);
 
-        return new AudioRecordResponseDto
-        {
-            AudioId = audioRecord.AudioID,
-            AudioFileUrl = audioUrl,
-            CreatedAt = audioRecord.CreatedAt,
-            DeletionAt = audioRecord.DeletionAt,
-            VisitId = visitId,
-            Message = "Audio uploaded successfully. AI processing started."
-        };
-    }
-}
+//        // 5. Trigger AI processing in the background (fire-and-forget)
+//        _ = Task.Run(async () =>
+//        {
+//            //try
+//            //{
+//            //    await _AiService.ProcessAudioAsync(BlobUrl, VisitId);
+//            //}
+//            //catch (Exception Ex)
+//            //{
+//            //    _Logger.LogError(Ex,
+//            //        "AI processing failed for Visit {VisitId}", VisitId);
+//            //}
+//        });
+
+//        return MapToDto(AudioRecord, "Processing");
+//    }
+
+//    // ── Get Status ────────────────────────────────────────────────────────────
+//    public async Task<AudioRecordDto?> GetByVisitIdAsync(int VisitId)
+//    {
+//        var Record = await _AudioRepo.GetByVisitIdAsync(VisitId);
+//        if (Record is null) return null;
+
+//        // Derive status from DeletionAt — if it's past, AI is done and cleanup pending
+//        var Status = Record.DeletionAt > DateTime.UtcNow ? "Processing" : "Done";
+//        return MapToDto(Record, Status);
+//    }
+
+//    // ── Background Cleanup ────────────────────────────────────────────────────
+//    public async Task DeleteExpiredAudioAsync()
+//    {
+//        var ExpiredRecords = await _AudioRepo.GetExpiredRecordsAsync();
+
+//        foreach (var Record in ExpiredRecords)
+//        {
+//            try
+//            {
+//                await DeleteBlobAsync(Record.AudioFileURL);
+//                _AudioRepo.Remove(Record);
+
+//                _Logger.LogInformation(
+//                    "Deleted expired audio for Visit {VisitId}. Blob: {Url}",
+//                    Record.VisitID, Record.AudioFileURL);
+//            }
+//            catch (Exception Ex)
+//            {
+//                _Logger.LogError(Ex,
+//                    "Failed to delete blob for Visit {VisitId}", Record.VisitID);
+//            }
+//        }
+
+//        await _AudioRepo.SaveChangesAsync();
+//    }
+
+//    // ── Azure Blob Helpers ────────────────────────────────────────────────────
+//    private async Task<string> UploadToBlobAsync(IFormFile File, int VisitId)
+//    {
+//        var Container = _BlobClient.GetBlobContainerClient(ContainerName);
+//        await Container.CreateIfNotExistsAsync(PublicAccessType.None);
+
+//        // Unique blob name: audio/visitId_timestamp.ext
+//        var Extension = Path.GetExtension(File.FileName).ToLowerInvariant();
+//        var BlobName = $"audio/{VisitId}_{DateTime.UtcNow:yyyyMMddHHmmss}{Extension}";
+//        var BlobRef = Container.GetBlobClient(BlobName);
+
+//        var BlobHttpHeaders = new BlobHttpHeaders
+//        {
+//            ContentType = File.ContentType
+//        };
+
+//        await using var Stream = File.OpenReadStream();
+//        await BlobRef.UploadAsync(Stream, new BlobUploadOptions
+//        {
+//            HttpHeaders = BlobHttpHeaders
+//        });
+
+//        return BlobRef.Uri.ToString();
+//    }
+
+//    private async Task DeleteBlobAsync(string BlobUrl)
+//    {
+//        if (string.IsNullOrEmpty(BlobUrl)) return;
+
+//        // Extract blob name from full URL
+//        var Uri = new Uri(BlobUrl);
+//        var BlobName = string.Join("", Uri.Segments[2..]);
+
+//        var Container = _BlobClient.GetBlobContainerClient(ContainerName);
+//        await Container.DeleteBlobIfExistsAsync(BlobName);
+//    }
+
+//    private static AudioRecordDto MapToDto(AudioRecord Record, string Status)
+//        => new()
+//        {
+//            AudioID = Record.AudioID,
+//            AudioFileURL = Record.AudioFileURL,
+//            CreatedAt = Record.CreatedAt,
+//            DeletionAt = Record.DeletionAt,
+//            VisitID = Record.VisitID,
+//            Status = Status
+//        };
+//}

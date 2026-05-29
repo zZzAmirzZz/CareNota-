@@ -286,82 +286,56 @@ public class AddMedicationToPrescriptionValidator : AbstractValidator<AddMedicat
 }
 // Validators/Visit/CreateVisitValidator.cs
 
-// ── CreateVisitValidator ──────────────────────────────────────────────────────
-// AppointmentID is the only required field.
-// SOAP fields are optional — doctor may fill them now (manual path)
-// or leave them empty and use the AI recording flow later.
+
 public class CreateVisitValidator : AbstractValidator<CreateVisitDto>
 {
     public CreateVisitValidator()
     {
         RuleFor(x => x.AppointmentID)
-            .GreaterThan(0)
-            .WithMessage("AppointmentID must be a valid positive number.");
+            .GreaterThan(0).WithMessage("AppointmentID must be a valid positive number.");
 
         RuleFor(x => x.VisitDate)
-            .NotEmpty()
-            .WithMessage("Visit date is required.")
-            .LessThanOrEqualTo(DateTime.UtcNow)
-            .WithMessage("Visit date cannot be in the future.");
+            .NotEmpty().WithMessage("Visit date is required.")
+            .LessThanOrEqualTo(DateTime.UtcNow).WithMessage("Visit date cannot be in the future.");
 
-        // SOAP fields validated only if the doctor chose to fill them at creation
         RuleFor(x => x.Subjective)
-            .MaximumLength(2000)
-            .WithMessage("Subjective cannot exceed 2000 characters.")
-            .When(x => x.Subjective is not null);
+            .MaximumLength(1000).WithMessage("Subjective cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Subjective));
 
         RuleFor(x => x.Objective)
-            .MaximumLength(2000)
-            .WithMessage("Objective cannot exceed 2000 characters.")
-            .When(x => x.Objective is not null);
+            .MaximumLength(1000).WithMessage("Objective cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Objective));
 
         RuleFor(x => x.Assessment)
-            .MaximumLength(2000)
-            .WithMessage("Assessment cannot exceed 2000 characters.")
-            .When(x => x.Assessment is not null);
+            .MaximumLength(1000).WithMessage("Assessment cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Assessment));
 
         RuleFor(x => x.Plan)
-            .MaximumLength(2000)
-            .WithMessage("Plan cannot exceed 2000 characters.")
-            .When(x => x.Plan is not null);
+            .MaximumLength(1000).WithMessage("Plan cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Plan));
     }
 }
+// Validators/Visit/UpdateVisitValidator.cs
 
-// ── UpdateVisitValidator ──────────────────────────────────────────────────────
-// Used for both manual SOAP updates and WhenToSeekHelp / FollowUpDate.
-// Every field is optional — validate only what is present in the request.
+
 public class UpdateVisitValidator : AbstractValidator<UpdateVisitDto>
 {
     public UpdateVisitValidator()
     {
         RuleFor(x => x.Subjective)
-            .MaximumLength(2000)
-            .WithMessage("Subjective cannot exceed 2000 characters.")
-            .When(x => x.Subjective is not null);
+            .MaximumLength(1000).WithMessage("Subjective cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Subjective));
 
         RuleFor(x => x.Objective)
-            .MaximumLength(2000)
-            .WithMessage("Objective cannot exceed 2000 characters.")
-            .When(x => x.Objective is not null);
+            .MaximumLength(1000).WithMessage("Objective cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Objective));
 
         RuleFor(x => x.Assessment)
-            .MaximumLength(2000)
-            .WithMessage("Assessment cannot exceed 2000 characters.")
-            .When(x => x.Assessment is not null);
+            .MaximumLength(1000).WithMessage("Assessment cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Assessment));
 
         RuleFor(x => x.Plan)
-            .MaximumLength(2000)
-            .WithMessage("Plan cannot exceed 2000 characters.")
-            .When(x => x.Plan is not null);
-
-        RuleFor(x => x.WhenToSeekHelp)
-            .MaximumLength(2000)
-            .WithMessage("WhenToSeekHelp cannot exceed 2000 characters.")
-            .When(x => x.WhenToSeekHelp is not null);
-
-        RuleFor(x => x.FollowUpDate)
-            .GreaterThan(DateTime.UtcNow)
-            .WithMessage("Follow-up date must be in the future.")
-            .When(x => x.FollowUpDate is not null);
+            .MaximumLength(1000).WithMessage("Plan cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Plan));
     }
 }

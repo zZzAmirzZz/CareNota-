@@ -67,7 +67,7 @@ public class AppointmentController : ControllerBase
         return Ok(data);
     }
 
-    // ── Get By Status ────────────────────────────
+    // ── Get By Status (Corrected & Improved) ─────────────────────────────
     [HttpGet("status/{status}")]
     //[Authorize(Roles = "Receptionist,Admin,Doctor")]
     public async Task<IActionResult> GetByStatus(string status)

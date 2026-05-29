@@ -19,11 +19,6 @@ public class AuthService(
 {
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto Dto)
     {
-        //// Validate role
-        string[] AllowedRoles = [RoleSeeder.Doctor, RoleSeeder.Patient, RoleSeeder.Receptionist];
-        if (!AllowedRoles.Contains(Dto.Role))
-            throw new ArgumentException($"Invalid role. Allowed: {string.Join(", ", AllowedRoles)}");
-
         // Check duplicate email
         if (await UserManager.FindByEmailAsync(Dto.Email) is not null)
             throw new InvalidOperationException("Email is already registered.");
@@ -44,14 +39,12 @@ public class AuthService(
             throw new InvalidOperationException(Errors);
         }
 
-        await UserManager.AddToRoleAsync(User, Dto.Role);
-
-        // Seed role-specific profile row
-        await CreateRoleProfileAsync(User.Id, Dto.Role);
+        // Always patient — no role field accepted from outside
+        await UserManager.AddToRoleAsync(User, RoleSeeder.Patient);
+        await CreateRoleProfileAsync(User.Id, RoleSeeder.Patient);
 
         return await BuildAuthResponseAsync(User);
     }
-
     public async Task<AuthResponseDto> LoginAsync(LoginDto Dto)
     {
         var User = await UserManager.FindByEmailAsync(Dto.Email)
@@ -144,7 +137,11 @@ public class AuthService(
 
             Response.ReceptionistId = Receptionist?.ReceptionistID;
         }
-
+        else if (Roles.Contains(RoleSeeder.Admin))
+        {
+            // Admin has no separate profile table — UserId IS the admin identifier
+            Response.AdminId = User.Id;
+        }
         return Response;
     }
 
