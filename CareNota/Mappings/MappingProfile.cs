@@ -79,7 +79,7 @@ public class MappingProfile : Profile
 
         // ── Create ─────────────────────────────────────────
 
-     
+
 
         CreateMap<CreateAppointmentDto, Appointment>()
             .ForMember(d => d.Status, opt => opt.MapFrom(_ => AppointmentStatus.Scheduled))
@@ -111,28 +111,34 @@ public class MappingProfile : Profile
             .ForMember(d => d.Reminders, opt => opt.Ignore());
 
         // ── Visit ───────────────────────────────────────────
+        // ── Visit → VisitDto ─────────────────────────────────────────────────
         CreateMap<Visit, VisitDto>()
             .ForMember(D => D.PatientName, O => O.MapFrom(S =>
                 S.Appointment != null && S.Appointment.Patient != null
                     ? S.Appointment.Patient.User.FullName
                     : string.Empty));
 
+        // ── Visit → VisitDetailDto ───────────────────────────────────────────
         CreateMap<Visit, VisitDetailDto>()
             .IncludeBase<Visit, VisitDto>()
-            .ForMember(D => D.Diagnoses,
-                O => O.MapFrom(S => S.VisitDiagnoses
+            .ForMember(D => D.Diagnoses, O => O.MapFrom(S =>
+                S.VisitDiagnoses
                     .Where(VD => VD.Diagnosis != null)
                     .Select(VD => VD.Diagnosis)))
-            .ForMember(D => D.Prescription,
-                O => O.MapFrom(S => S.Prescription))
-            .ForMember(D => D.LabTests,
-                O => O.MapFrom(S => S.LabTests))
-            .ForMember(D => D.AISummaries,
-                O => O.MapFrom(S => S.AISummaries));
+            .ForMember(D => D.Prescription, O => O.MapFrom(S => S.Prescription))
+            .ForMember(D => D.LabTests, O => O.MapFrom(S => S.LabTests))
+            .ForMember(D => D.AISummaries, O => O.MapFrom(S => S.AISummaries));
 
+        // ── AISummary → AISummarySummaryDto ─────────────────────────────────
         CreateMap<AISummary, AISummarySummaryDto>();
 
+        // ── CreateVisitDto → Visit ───────────────────────────────────────────
+        // SOAP fields are mapped if the doctor provided them (manual path).
+        // If null, they stay null on the entity — that is valid.
+        // Navigation + collection properties are always ignored.
         CreateMap<CreateVisitDto, Visit>()
+            .ForMember(D => D.WhenToSeekHelp, O => O.Ignore())
+            .ForMember(D => D.FollowUpDate, O => O.Ignore())
             .ForMember(D => D.Appointment, O => O.Ignore())
             .ForMember(D => D.Prescription, O => O.Ignore())
             .ForMember(D => D.AudioRecord, O => O.Ignore())
@@ -140,6 +146,10 @@ public class MappingProfile : Profile
             .ForMember(D => D.AISummaries, O => O.Ignore())
             .ForMember(D => D.VisitDiagnoses, O => O.Ignore());
 
+        // ── UpdateVisitDto → Visit ───────────────────────────────────────────
+        // ForAllMembers: skip null fields so existing DB data is preserved.
+        // Example: sending { "assessment": "X" } only updates Assessment,
+        // leaving Subjective / Plan / WhenToSeekHelp etc. untouched.
         CreateMap<UpdateVisitDto, Visit>()
             .ForMember(D => D.VisitID, O => O.Ignore())
             .ForMember(D => D.VisitDate, O => O.Ignore())
@@ -149,8 +159,9 @@ public class MappingProfile : Profile
             .ForMember(D => D.AudioRecord, O => O.Ignore())
             .ForMember(D => D.LabTests, O => O.Ignore())
             .ForMember(D => D.AISummaries, O => O.Ignore())
-            .ForMember(D => D.VisitDiagnoses, O => O.Ignore());
-
+            .ForMember(D => D.VisitDiagnoses, O => O.Ignore())
+            .ForAllMembers(O => O.Condition(
+                (Src, Dest, SrcMember) => SrcMember != null));
         // ── Diagnosis ───────────────────────────────────────
         CreateMap<Diagnosis, DiagnosisDto>();
         CreateMap<Diagnosis, DiagnosisSummaryDto>();

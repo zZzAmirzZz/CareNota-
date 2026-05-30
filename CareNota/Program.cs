@@ -1,4 +1,9 @@
+using Azure.Storage.Blobs;
+using CareNota.API.BackgroundJobs;
+using CareNota.BLL.Validators;
 using CareNota.Data;
+using CareNota.DTOs.Audio;
+using CareNota.Interfaces;
 using CareNota.Mappings;
 using CareNota.Models;
 using CareNota.Repositories;
@@ -19,8 +24,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using Azure.Storage.Blobs;                                             
-      
+
+
 
 
 var Builder = WebApplication.CreateBuilder(args);
@@ -49,19 +54,19 @@ Builder.Services.AddIdentity<ApplicationUser, IdentityRole>(Options =>
 
 
 
-////   AZURE BLOB
-//Builder.Services.AddSingleton(
-//   new BlobServiceClient(
-//       Builder.Configuration["AzureBlob:ConnectionString"]));
 
-////  HTTPCLIENT → PYTHON FASTAPI                                   
-//Builder.Services.AddHttpClient("PythonFastAPI", Client =>
-//{
-//    Client.BaseAddress = new Uri(Builder.Configuration["PythonAI:BaseUrl"]!);
-//    Client.Timeout = TimeSpan.FromMinutes(5);
-//});
+// ── Azure Blob Storage ────────────────────────────────────────────────────────
+Builder.Services.AddSingleton(_ =>
+    new BlobServiceClient(Builder.Configuration["AzureBlob:ConnectionString"]));
 
-
+// ── HttpClient for AI (Python FastAPI) ───────────────────────────────────────
+Builder.Services.AddHttpClient<IAIService, AIService>(Client =>
+{
+    Client.BaseAddress = new Uri(
+        Builder.Configuration["AIService:BaseUrl"] ?? "http://127.0.0.1:8000");
+    Client.Timeout = TimeSpan.FromMinutes(
+        Builder.Configuration.GetValue<int>("AIService:TimeoutMinutes", 5));
+});
 // ── Controllers + Swagger ───────────────────────────────────────────────────
 //Builder.Services.AddControllers();
 
@@ -103,9 +108,9 @@ Builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
 Builder.Services.AddScoped<ILabTestRepository, LabTestRepository>();
 // DI registrations
 Builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+Builder.Services.AddScoped<IAudioRepository, AudioRepository>();
+Builder.Services.AddScoped<IAISummaryRepository, AISummaryRepository>();
 
-
-//Builder.Services.AddScoped<IAudioRepository, AudioRepository>();
 
 // ── Services ────────────────────────────────────────────────────────────────
 
@@ -118,10 +123,15 @@ Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
 Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-//Builder.Services.AddScoped<IAudioService, AudioService>();
+Builder.Services.AddScoped<IAudioService, AudioService>();
 Builder.Services.AddScoped<IAdminService, AdminService>();
 Builder.Services.AddScoped<ISummaryService, SummaryService>();
 
+//// Email
+//Builder.Services.Configure<EmailSettings>(
+//Builder.Configuration.GetSection("EmailSettings"));
+//Builder.Services.AddScoped<IEmailService, EmailService>();
+//Builder.Services.AddScoped<IReminderService, ReminderService>();
 
 // ── FluentValidation ─────────────────────────────────────────────────────────
 
@@ -129,6 +139,7 @@ Builder.Services.AddAutoMapper(typeof(MappingProfile));
 Builder.Services.AddFluentValidationAutoValidation();
 Builder.Services.AddValidatorsFromAssemblyContaining<CreateAppointmentValidator>();
 Builder.Services.AddScoped<IValidator<AudioUploadDto>, AudioUploadValidator>();
+
 
 // ── Background Job ────────────────────────────────────────────────────────────
 Builder.Services.AddHostedService<AudioCleanupJob>();
@@ -139,12 +150,6 @@ Builder.Services.AddHangfire(config =>
         Builder.Configuration.GetConnectionString("DefaultConnection")));
 Builder.Services.AddHangfireServer();
 
-
-Builder.Services.AddAutoMapper(typeof(MappingProfile));
-
-// ── FluentValidation ─────────────────────────────────────────────────────────
-Builder.Services.AddFluentValidationAutoValidation();
-Builder.Services.AddValidatorsFromAssemblyContaining<CreateAppointmentValidator>();
 
 // ── File Upload Config ──────────────────────────────────────────────────────
 Builder.Services.Configure<FormOptions>(Options =>
@@ -197,6 +202,7 @@ Builder.Services.AddAuthentication(options =>
 
 // ── Build App ───────────────────────────────────────────────────────────────
 var App = Builder.Build();
+App.UseStaticFiles();
 // admin 
 // ====================== DATA SEEDING ======================
 // Program.cs — seeding block
@@ -218,33 +224,7 @@ using (var scope = App.Services.CreateScope())
         logger.LogError(ex, "❌ An error occurred while seeding the database.");
     }
 }
-//// Seed Roles + Admin
-//using (var scope = App.Services.CreateScope())
-//{
-//    // Run migrations
-//    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-//    db.Database.Migrate();
 
-//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-//    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
-//    // Create roles
-//    string[] roles = { "admin", "doctor", "patient", "receptionist" };
-//    foreach (var role in roles)
-//    {
-//        if (!await roleManager.RoleExistsAsync(role))
-//            await roleManager.CreateAsync(new IdentityRole(role));
-//    }
-
-
-
-///
-
-//        var result = await userManager.CreateAsync(admin, "Admin@123456");
-//        if (result.Succeeded)
-//            await userManager.AddToRoleAsync(admin, "admin");
-//    }
-//}
 // ── Middleware Pipeline ─────────────────────────────────────────────────────
 // Hangfire dashboard (access at /hangfire while in development)
 App.UseHangfireDashboard("/hangfire");
@@ -280,7 +260,6 @@ App.UseAuthentication();          // 3️⃣ Who are you?  ← was completely mi
 App.UseAuthorization();           // 4️⃣ What can you do?
 App.MapControllers();             // 5️⃣ Route to controllers
 
-App.Run();
 // Schedule recurring jobs
 RecurringJob.AddOrUpdate<IReminderService>(
     "check-missed-appointments",

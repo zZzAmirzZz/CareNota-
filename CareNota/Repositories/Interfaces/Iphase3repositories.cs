@@ -7,6 +7,8 @@ namespace CareNota.Repositories.Interfaces;
 // ══════════════════════════════════════════════════════════════════════════════
 public interface IVisitRepository : IRepository<Visit>
 {
+    Task<Visit?> GetByIdAsync(int VisitId);
+    Task SaveAsync();
     Task<Visit?> GetByIdWithDetailsAsync(int VisitId);
     Task<Visit?> GetByAppointmentIdAsync(int AppointmentId);
     Task<IEnumerable<Visit>> GetByPatientIdAsync(int PatientId);

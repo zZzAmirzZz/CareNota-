@@ -1,18 +1,19 @@
-﻿namespace CareNota.DTOs.Audio;
+﻿using System.Text.Json.Serialization;
 
-// ── Read ──────────────────────────────────────────────────────────────────────
-public class AudioRecordDto
+namespace CareNota.DTOs.Audio;
+
+public class AudioRecordResponseDto
 {
-    public int AudioID { get; set; }
-    public string AudioFileURL { get; set; } = string.Empty;
+    public int AudioId { get; set; }
+    public string AudioFileUrl { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime DeletionAt { get; set; }
-    public int VisitID { get; set; }
-    public string Status { get; set; } = string.Empty; // "Processing" | "Done" | "Failed"
+    public int VisitId { get; set; }
+    public string Message { get; set; } = string.Empty;
 }
 
-// ── Write ─────────────────────────────────────────────────────────────────────
 public class AudioUploadDto
 {
     public IFormFile AudioFile { get; set; } = null!;
+    public int VisitId { get; set; }
 }

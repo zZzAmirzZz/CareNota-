@@ -8,110 +8,116 @@ using CareNota.Models;
 using CareNota.Repositories.Interfaces;
 using CareNota.Services.Interfaces;
 
+
 namespace CareNota.Services;
-
-
 
 public class VisitService : IVisitService
 {
-    private readonly IVisitRepository _visitRepo;
-    private readonly IAppointmentRepository _appointmentRepo;
-    private readonly IMapper _mapper;
+    private readonly IVisitRepository _VisitRepo;
+    private readonly IAppointmentRepository _AppointmentRepo;
+    private readonly IMapper _Mapper;
 
     public VisitService(
-        IVisitRepository visitRepo,
-        IAppointmentRepository appointmentRepo,
-        IMapper mapper)
+        IVisitRepository VisitRepo,
+        IAppointmentRepository AppointmentRepo,
+        IMapper Mapper)
     {
-        _visitRepo = visitRepo;
-        _appointmentRepo = appointmentRepo;
-        _mapper = mapper;
+        _VisitRepo = VisitRepo;
+        _AppointmentRepo = AppointmentRepo;
+        _Mapper = Mapper;
     }
 
     public async Task<IEnumerable<VisitDto>> GetAllAsync()
+        => _Mapper.Map<IEnumerable<VisitDto>>(await _VisitRepo.GetAllAsync());
+
+    public async Task<VisitDto?> GetByIdAsync(int VisitId)
     {
-        var visits = await _visitRepo.GetAllAsync();
-        return _mapper.Map<IEnumerable<VisitDto>>(visits);
+        var Visit = await _VisitRepo.GetByIdAsync(VisitId);
+        return Visit is null ? null : _Mapper.Map<VisitDto>(Visit);
     }
 
-    public async Task<VisitDto?> GetByIdAsync(int visitId)
+    public async Task<VisitDetailDto?> GetDetailsAsync(int VisitId)
     {
-        var visit = await _visitRepo.GetByIdAsync(visitId);
-        return visit is null ? null : _mapper.Map<VisitDto>(visit);
+        var Visit = await _VisitRepo.GetByIdWithDetailsAsync(VisitId);
+        return Visit is null ? null : _Mapper.Map<VisitDetailDto>(Visit);
     }
 
-    public async Task<VisitDetailDto?> GetDetailsAsync(int visitId)
+    public async Task<IEnumerable<VisitDto>> GetByPatientIdAsync(int PatientId)
+        => _Mapper.Map<IEnumerable<VisitDto>>(await _VisitRepo.GetByPatientIdAsync(PatientId));
+
+    public async Task<VisitDto?> GetByAppointmentIdAsync(int AppointmentId)
     {
-        var visit = await _visitRepo.GetByIdWithDetailsAsync(visitId);
-        return visit is null ? null : _mapper.Map<VisitDetailDto>(visit);
+        var Visit = await _VisitRepo.GetByAppointmentIdAsync(AppointmentId);
+        return Visit is null ? null : _Mapper.Map<VisitDto>(Visit);
     }
 
-    public async Task<IEnumerable<VisitDto>> GetByPatientIdAsync(int patientId)
+    public async Task<VisitDto> CreateAsync(CreateVisitDto Dto)
     {
-        var visits = await _visitRepo.GetByPatientIdAsync(patientId);
-        return _mapper.Map<IEnumerable<VisitDto>>(visits);
-    }
+        // 1. Validate appointment exists
+        var Appointment = await _AppointmentRepo.GetByIdAsync(Dto.AppointmentID)
+            ?? throw new KeyNotFoundException($"Appointment {Dto.AppointmentID} not found.");
 
-    public async Task<VisitDto?> GetByAppointmentIdAsync(int appointmentId)
-    {
-        var visit = await _visitRepo.GetByAppointmentIdAsync(appointmentId);
-        return visit is null ? null : _mapper.Map<VisitDto>(visit);
-    }
+        // 2. Block cancelled appointments
+        if (Appointment.Status == AppointmentStatus.Cancelled)
+            throw new InvalidOperationException(
+                "Cannot create a visit for a cancelled appointment.");
 
-    public async Task<VisitDto> CreateAsync(CreateVisitDto dto)
-    {
-        // 1. Validate Appointment exists
-        var appointment = await _appointmentRepo.GetByIdAsync(dto.AppointmentID)
-            ?? throw new KeyNotFoundException($"Appointment {dto.AppointmentID} not found.");
+        // 3. Block duplicate visits for the same appointment
+        if (await _VisitRepo.GetByAppointmentIdAsync(Dto.AppointmentID) is not null)
+            throw new InvalidOperationException(
+                "This appointment already has a visit record.");
 
-        // 2. Prevent creating visit for cancelled appointment
-        if (appointment.Status == AppointmentStatus.Cancelled)
-        {
-            throw new InvalidOperationException("Cannot create a visit for a cancelled appointment.");
-        }
+        // 4. Map DTO → Entity.
+        //
+        //    Two valid states after this mapping:
+        //
+        //    Manual path  → doctor filled SOAP fields in the request body.
+        //                   Visit is created with clinical data already present.
+        //                   Doctor can still update via PUT /visit/{id} anytime.
+        //
+        //    AI path      → doctor left SOAP fields empty (null).
+        //                   Visit is created with Subjective/Objective/Assessment/Plan = null.
+        //                   Doctor records audio → AI processes → doctor reviews →
+        //                   POST /visits/{id}/summary/approve → SOAP fields written.
+        //
+        //    Both paths write to the same Visit row and the same SOAP columns.
+        var Visit = _Mapper.Map<Visit>(Dto);
 
-        // 3. Prevent duplicate visit for the same appointment
-        var existingVisit = await _visitRepo.GetByAppointmentIdAsync(dto.AppointmentID);
-        if (existingVisit is not null)
-        {
-            throw new InvalidOperationException("This appointment already has a visit record.");
-        }
+        await _VisitRepo.AddAsync(Visit);
 
-        // 4. Map DTO to Entity
-        var visit = _mapper.Map<Visit>(dto);
+        // 5. Mark appointment as Completed
+        Appointment.Status = AppointmentStatus.Completed;
+        _AppointmentRepo.Update(Appointment);
 
-        // 5. Add Visit
-        await _visitRepo.AddAsync(visit);
+        // Both share the same DbContext — one save covers both changes
+        await _VisitRepo.SaveChangesAsync();
 
-        // 6. Update Appointment Status to Completed
-        appointment.Status = AppointmentStatus.Completed;
-        _appointmentRepo.Update(appointment);
-
-        // 7. Save changes (Better to use one repository or UnitOfWork later)
-        await _visitRepo.SaveChangesAsync();   // This should also save the appointment if they share the same DbContext
-
-        return _mapper.Map<VisitDto>(visit);
+        return _Mapper.Map<VisitDto>(Visit);
     }
 
     public async Task<VisitDto> UpdateAsync(int VisitId, UpdateVisitDto Dto)
     {
-        var Visit = await _visitRepo.GetByIdAsync(VisitId)
+        var Visit = await _VisitRepo.GetByIdAsync(VisitId)
             ?? throw new KeyNotFoundException($"Visit {VisitId} not found.");
 
-        _mapper.Map(Dto, Visit);
-        _visitRepo.Update(Visit);
-        await _visitRepo.SaveChangesAsync();
+        // AutoMapper skips null fields (ForAllMembers condition in profile),
+        // so only the fields the doctor actually sent will be updated.
+        // Existing values for untouched fields are preserved.
+        _Mapper.Map(Dto, Visit);
 
-        return _mapper.Map<VisitDto>(Visit);
+        _VisitRepo.Update(Visit);
+        await _VisitRepo.SaveChangesAsync();
+
+        return _Mapper.Map<VisitDto>(Visit);
     }
 
     public async Task DeleteAsync(int VisitId)
     {
-        var Visit = await _visitRepo.GetByIdAsync(VisitId)
+        var Visit = await _VisitRepo.GetByIdAsync(VisitId)
             ?? throw new KeyNotFoundException($"Visit {VisitId} not found.");
 
-        _visitRepo.Remove(Visit);
-        await _visitRepo.SaveChangesAsync();
+        _VisitRepo.Remove(Visit);
+        await _VisitRepo.SaveChangesAsync();
     }
 }
 

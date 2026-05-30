@@ -8,10 +8,25 @@ namespace CareNota.Repositories;
 // ══════════════════════════════════════════════════════════════════════════════
 // VisitRepository
 // ══════════════════════════════════════════════════════════════════════════════
+
 public class VisitRepository : GenericRepository<Visit>, IVisitRepository
 {
-    public VisitRepository(ApplicationDbContext Context) : base(Context) { }
+    private readonly ApplicationDbContext _Context;
 
+    public VisitRepository(ApplicationDbContext Context) : base(Context)
+    {
+        _Context = Context;
+    }
+
+    // Simple Get By Id
+    public async Task<Visit?> GetByIdAsync(int VisitId)
+        => await _Context.Visits.FindAsync(VisitId);
+
+    // Save Changes
+    public async Task SaveAsync()
+        => await _Context.SaveChangesAsync();
+
+    // Get Visit With Full Details
     public async Task<Visit?> GetByIdWithDetailsAsync(int VisitId)
         => await DbSet
             .Include(V => V.Appointment)
@@ -29,6 +44,7 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
             .Include(V => V.AISummaries)
             .FirstOrDefaultAsync(V => V.VisitID == VisitId);
 
+    // Get Visit By Appointment Id
     public async Task<Visit?> GetByAppointmentIdAsync(int AppointmentId)
         => await DbSet
             .Include(V => V.Appointment)
@@ -36,6 +52,7 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
                     .ThenInclude(P => P.User)
             .FirstOrDefaultAsync(V => V.AppointmentID == AppointmentId);
 
+    // Get All Visits For Patient
     public async Task<IEnumerable<Visit>> GetByPatientIdAsync(int PatientId)
         => await DbSet
             .Include(V => V.Appointment)
@@ -48,12 +65,14 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
             .AsNoTracking()
             .ToListAsync();
 
+    // Get Visit With Diagnoses
     public async Task<Visit?> GetWithDiagnosesAsync(int VisitId)
         => await DbSet
             .Include(V => V.VisitDiagnoses)
                 .ThenInclude(VD => VD.Diagnosis)
             .FirstOrDefaultAsync(V => V.VisitID == VisitId);
 
+    // Get Visit With Prescription
     public async Task<Visit?> GetWithPrescriptionAsync(int VisitId)
         => await DbSet
             .Include(V => V.Prescription)
@@ -61,13 +80,12 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
                     .ThenInclude(PM => PM.Medication)
             .FirstOrDefaultAsync(V => V.VisitID == VisitId);
 
+    // Get Visit With Lab Tests
     public async Task<Visit?> GetWithLabTestsAsync(int VisitId)
         => await DbSet
             .Include(V => V.LabTests)
             .FirstOrDefaultAsync(V => V.VisitID == VisitId);
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
+}// ══════════════════════════════════════════════════════════════════════════════
 // DiagnosisRepository
 // ══════════════════════════════════════════════════════════════════════════════
 public class DiagnosisRepository : GenericRepository<Diagnosis>, IDiagnosisRepository

@@ -1,16 +1,24 @@
 ﻿namespace CareNota.DTOs.Visit;
 
 // ── Read ──────────────────────────────────────────────────────────────────────
+
 public class VisitDto
 {
     public int VisitID { get; set; }
     public DateTime VisitDate { get; set; }
-    public string Subjective { get; set; } = string.Empty;
-    public string Objective { get; set; } = string.Empty;
-    public string Assessment { get; set; } = string.Empty;
-    public string Plan { get; set; } = string.Empty;
     public int AppointmentID { get; set; }
     public string PatientName { get; set; } = string.Empty;
+
+    // null = visit opened but not yet documented (neither manually nor via AI)
+    public string? Subjective { get; set; }
+    public string? Objective { get; set; }
+    public string? Assessment { get; set; }
+    public string? Plan { get; set; }
+
+    // Written on AI summary approval — null if doctor used manual entry
+    // or if AI flow not yet approved
+    public string? WhenToSeekHelp { get; set; }
+    public DateTime? FollowUpDate { get; set; }
 }
 
 public class VisitDetailDto : VisitDto
@@ -53,29 +61,42 @@ public class LabTestSummaryDto
     public bool HasResult => !string.IsNullOrEmpty(TestResultURL);
 }
 
+// DoctorRating removed — no longer part of AISummary model
 public class AISummarySummaryDto
 {
     public int AISummaryID { get; set; }
-    public string SummaryText { get; set; } = string.Empty;
     public string SummaryType { get; set; } = string.Empty;
-    public float DoctorRating { get; set; }
+    public string SummaryText { get; set; } = string.Empty;
 }
 
 // ── Write ─────────────────────────────────────────────────────────────────────
+
+// Doctor creates a visit when the appointment starts.
+// SOAP fields are optional at creation:
+//   - Manual path: doctor fills them right away (or later via PUT)
+//   - AI path:     doctor leaves them empty and uses audio recording instead
 public class CreateVisitDto
 {
-    public DateTime VisitDate { get; set; } = DateTime.UtcNow;
-    public string Subjective { get; set; } = string.Empty;
-    public string Objective { get; set; } = string.Empty;
-    public string Assessment { get; set; } = string.Empty;
-    public string Plan { get; set; } = string.Empty;
     public int AppointmentID { get; set; }
+    public DateTime VisitDate { get; set; } = DateTime.UtcNow;
+
+    // Optional at creation — doctor can fill now or fill later via PUT or AI flow
+    public string? Subjective { get; set; }
+    public string? Objective { get; set; }
+    public string? Assessment { get; set; }
+    public string? Plan { get; set; }
 }
 
+// Doctor manually updates visit details.
+// All fields nullable — only send what changed, existing values are preserved.
+// WhenToSeekHelp and FollowUpDate can also be set manually here,
+// not just through the AI approval flow.
 public class UpdateVisitDto
 {
-    public string Subjective { get; set; } = string.Empty;
-    public string Objective { get; set; } = string.Empty;
-    public string Assessment { get; set; } = string.Empty;
-    public string Plan { get; set; } = string.Empty;
+    public string? Subjective { get; set; }
+    public string? Objective { get; set; }
+    public string? Assessment { get; set; }
+    public string? Plan { get; set; }
+    public string? WhenToSeekHelp { get; set; }
+    public DateTime? FollowUpDate { get; set; }
 }

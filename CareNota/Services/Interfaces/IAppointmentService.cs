@@ -1,30 +1,34 @@
-﻿using CareNota.DTOs.Appointment;
+﻿using CareNota.DTOs;
+using CareNota.DTOs.Appointment;
 using CareNota.Models;
 
-
-public interface IAppointmentService
+namespace CareNota.Services.Interfaces
 {
-    // ── Read ─────────────────────────────
-    Task<IEnumerable<AppointmentDto>> GetAllAsync();
-    Task<AppointmentDto?> GetByIdAsync(int appointmentId);
-    Task<AppointmentDetailDto?> GetDetailsAsync(int appointmentId);
+    public interface IAppointmentService
+    {
+        // Read
+        Task<IEnumerable<AppointmentDto>> GetAllAsync();
+        Task<AppointmentDto?> GetByIdAsync(int appointmentId);
+        Task<AppointmentDetailDto?> GetDetailsAsync(int appointmentId);
+        Task<IEnumerable<AppointmentDto>> GetByPatientIdAsync(int patientId);
+        Task<IEnumerable<AppointmentDto>> GetByDoctorIdAsync(int doctorId);
+        Task<IEnumerable<AppointmentDto>> GetByStatusAsync(AppointmentStatus status);
+        Task<IEnumerable<AppointmentDto>> GetByDateRangeAsync(DateTime from, DateTime to);
+        Task<IEnumerable<AppointmentDto>> GetDoctorWeeklyScheduleAsync(int doctorId, DateTime startOfWeek);
 
-    Task<IEnumerable<AppointmentDto>> GetByPatientIdAsync(int patientId);
-    Task<IEnumerable<AppointmentDto>> GetByDoctorIdAsync(int doctorId);
+        // Available Slots
+        Task<IEnumerable<TimeSlotDto>> GetAvailableSlotsAsync(int doctorId, DateTime date);
 
-    Task<IEnumerable<AppointmentDto>> GetByStatusAsync(AppointmentStatus status);
-    Task<IEnumerable<AppointmentDto>> GetByDateRangeAsync(DateTime from, DateTime to);
+        // Create
+        Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto);
 
-    // Weekly schedule
-    Task<IEnumerable<AppointmentDto>> GetDoctorWeeklyScheduleAsync(int doctorId, DateTime startOfWeek);
+        // Update
+        Task<AppointmentDto> UpdateAsync(int appointmentId, UpdateAppointmentDto dto);
 
-    // 🔥 Available slots
-    Task<IEnumerable<TimeSlotDto>> GetAvailableSlotsAsync(int doctorId, DateTime date);
+        // Cancel
+        Task CancelAsync(int appointmentId);
 
-    // ── Write ────────────────────────────
-    Task<AppointmentDto> CreateAsync(CreateAppointmentDto dto);
-    Task<AppointmentDto> UpdateAsync(int appointmentId, UpdateAppointmentDto dto);
-
-    Task CancelAsync(int appointmentId);
-    Task DeleteAsync(int appointmentId);
+        // Delete
+        Task DeleteAsync(int appointmentId);
+    }
 }
