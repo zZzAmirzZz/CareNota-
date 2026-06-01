@@ -24,18 +24,13 @@ public interface IVisitService
 // ══════════════════════════════════════════════════════════════════════════════
 // IDiagnosisService
 // ══════════════════════════════════════════════════════════════════════════════
+
 public interface IDiagnosisService
 {
-    Task<IEnumerable<DiagnosisDto>> GetAllAsync();
-    Task<DiagnosisDto?> GetByIcdCodeAsync(string ICD10Code);
-    Task<IEnumerable<DiagnosisDto>> SearchAsync(string Query);
     Task<IEnumerable<DiagnosisDto>> GetByVisitIdAsync(int VisitId);
     Task<DiagnosisDto> CreateAsync(CreateDiagnosisDto Dto);
-    Task AssignToVisitAsync(int VisitId, AssignDiagnosisToVisitDto Dto);
-    Task RemoveFromVisitAsync(int VisitId, string ICD10Code);
-    Task DeleteAsync(string ICD10Code);
+    Task DeleteAsync(int DiagnosisId);
 }
-
 // ══════════════════════════════════════════════════════════════════════════════
 // IPrescriptionService
 // ══════════════════════════════════════════════════════════════════════════════

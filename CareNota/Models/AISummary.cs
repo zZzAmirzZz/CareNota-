@@ -6,11 +6,15 @@ public class AISummary
 {
     [Key]
     public int AISummaryID { get; set; }
+
     public string SummaryText { get; set; } = string.Empty;
-    // Stores the nested AI object serialised as JSON.
     // SummaryType = "Doctor"  → { subjective, objective, assessment, plan }
-    // SummaryType = "Patient" → { diagnosis, symptoms, treatmentPlan }
+    // SummaryType = "Patient" → { diagnosis, symptoms, treatment_plan, when_to_seek_help, follow_up }
     public string SummaryType { get; set; } = string.Empty;
+
+    // Optional — doctor rates after reviewing (1–5), used for model improvement
+    public int? DoctorRating { get; set; }
+    public string? DoctorFeedback { get; set; }
 
     // FK
     public int VisitID { get; set; }

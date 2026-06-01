@@ -1,20 +1,14 @@
 ﻿namespace CareNota.DTOs.Diagnosis;
 
-// ── Read ──────────────────────────────────────────────────────────────────────
 public class DiagnosisDto
 {
-    public string ICD10Code { get; set; } = string.Empty;
+    public int DiagnosisID { get; set; }
     public string DiagnosisName { get; set; } = string.Empty;
+    public int VisitID { get; set; }
 }
 
-// ── Write ─────────────────────────────────────────────────────────────────────
 public class CreateDiagnosisDto
 {
-    public string ICD10Code { get; set; } = string.Empty;
     public string DiagnosisName { get; set; } = string.Empty;
-}
-
-public class AssignDiagnosisToVisitDto
-{
-    public string ICD10Code { get; set; } = string.Empty;
+    public int VisitID { get; set; }
 }

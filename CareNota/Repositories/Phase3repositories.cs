@@ -28,21 +28,20 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
 
     // Get Visit With Full Details
     public async Task<Visit?> GetByIdWithDetailsAsync(int VisitId)
-        => await DbSet
-            .Include(V => V.Appointment)
-                .ThenInclude(A => A.Patient)
-                    .ThenInclude(P => P.User)
-            .Include(V => V.Appointment)
-                .ThenInclude(A => A.Receptionist)
-            .Include(V => V.VisitDiagnoses)
-                .ThenInclude(VD => VD.Diagnosis)
-            .Include(V => V.Prescription)
-                .ThenInclude(P => P!.PrescriptionMedications)
-                    .ThenInclude(PM => PM.Medication)
-            .Include(V => V.LabTests)
-            .Include(V => V.AudioRecord)
-            .Include(V => V.AISummaries)
-            .FirstOrDefaultAsync(V => V.VisitID == VisitId);
+      => await DbSet
+          .Include(V => V.Appointment)
+              .ThenInclude(A => A.Patient)
+                  .ThenInclude(P => P.User)
+          .Include(V => V.Appointment)
+              .ThenInclude(A => A.Receptionist)
+          .Include(V => V.Diagnoses)
+          .Include(V => V.Prescription)
+              .ThenInclude(P => P!.PrescriptionMedications)
+                  .ThenInclude(PM => PM.Medication)
+          .Include(V => V.LabTests)
+          .Include(V => V.AudioRecord)
+          .Include(V => V.AISummaries)
+          .FirstOrDefaultAsync(V => V.VisitID == VisitId);
 
     // Get Visit By Appointment Id
     public async Task<Visit?> GetByAppointmentIdAsync(int AppointmentId)
@@ -58,8 +57,7 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
             .Include(V => V.Appointment)
                 .ThenInclude(A => A.Patient)
                     .ThenInclude(P => P.User)
-            .Include(V => V.VisitDiagnoses)
-                .ThenInclude(VD => VD.Diagnosis)
+            .Include(V => V.Diagnoses)
             .Where(V => V.Appointment.PatientID == PatientId)
             .OrderByDescending(V => V.VisitDate)
             .AsNoTracking()
@@ -67,10 +65,9 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
 
     // Get Visit With Diagnoses
     public async Task<Visit?> GetWithDiagnosesAsync(int VisitId)
-        => await DbSet
-            .Include(V => V.VisitDiagnoses)
-                .ThenInclude(VD => VD.Diagnosis)
-            .FirstOrDefaultAsync(V => V.VisitID == VisitId);
+      => await DbSet
+          .Include(V => V.Diagnoses)
+          .FirstOrDefaultAsync(V => V.VisitID == VisitId);
 
     // Get Visit With Prescription
     public async Task<Visit?> GetWithPrescriptionAsync(int VisitId)
@@ -88,49 +85,22 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
 }// ══════════════════════════════════════════════════════════════════════════════
 // DiagnosisRepository
 // ══════════════════════════════════════════════════════════════════════════════
+
 public class DiagnosisRepository : GenericRepository<Diagnosis>, IDiagnosisRepository
 {
-    private readonly DbSet<VisitDiagnosis> _VisitDiagnoses;
-
-    public DiagnosisRepository(ApplicationDbContext Context) : base(Context)
-        => _VisitDiagnoses = Context.Set<VisitDiagnosis>();
-
-    public async Task<Diagnosis?> GetByIcdCodeAsync(string ICD10Code)
-        => await DbSet.FindAsync(ICD10Code);
-
-    public async Task<IEnumerable<Diagnosis>> SearchByNameAsync(string Name)
-        => await DbSet
-            .Where(D => D.DiagnosisName.ToLower().Contains(Name.ToLower()) ||
-                        D.ICD10Code.ToLower().Contains(Name.ToLower()))
-            .AsNoTracking()
-            .ToListAsync();
+    public DiagnosisRepository(ApplicationDbContext Context) : base(Context) { }
 
     public async Task<IEnumerable<Diagnosis>> GetByVisitIdAsync(int VisitId)
-        => await _VisitDiagnoses
-            .Where(VD => VD.VisitID == VisitId)
-            .Include(VD => VD.Diagnosis)
-            .Select(VD => VD.Diagnosis)
+        => await DbSet
+            .Where(D => D.VisitID == VisitId)
             .AsNoTracking()
             .ToListAsync();
 
-    public async Task<bool> IcdCodeExistsAsync(string ICD10Code)
-        => await DbSet.AnyAsync(D => D.ICD10Code == ICD10Code);
-
-    public async Task AddVisitDiagnosisAsync(VisitDiagnosis VisitDiagnosis)
-        => await _VisitDiagnoses.AddAsync(VisitDiagnosis);
-
-    public async Task RemoveVisitDiagnosisAsync(int VisitId, string ICD10Code)
-    {
-        var Entity = await _VisitDiagnoses.FindAsync(VisitId, ICD10Code);
-        if (Entity is not null)
-            _VisitDiagnoses.Remove(Entity);
-    }
-
-    public async Task<bool> VisitDiagnosisExistsAsync(int VisitId, string ICD10Code)
-        => await _VisitDiagnoses
-            .AnyAsync(VD => VD.VisitID == VisitId && VD.ICD10Code == ICD10Code);
+    public async Task<bool> ExistsForVisitAsync(int VisitId, string DiagnosisName)
+        => await DbSet
+            .AnyAsync(D => D.VisitID == VisitId &&
+                           D.DiagnosisName.ToLower() == DiagnosisName.ToLower());
 }
-
 // ══════════════════════════════════════════════════════════════════════════════
 // PrescriptionRepository
 // ══════════════════════════════════════════════════════════════════════════════

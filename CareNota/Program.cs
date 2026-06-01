@@ -118,15 +118,14 @@ Builder.Services.AddScoped<IAuthService, AuthService>();
 Builder.Services.AddScoped<IPatientService, PatientService>();
 Builder.Services.AddScoped<IDoctorService, DoctorService>();
 Builder.Services.AddScoped<IVisitService, VisitService>();
-Builder.Services.AddScoped<IDiagnosisService, DiagnosisService>();
 Builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
 Builder.Services.AddScoped<IMedicationService, MedicationService>();
 Builder.Services.AddScoped<ILabTestService, LabTestService>();
 Builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 Builder.Services.AddScoped<IAudioService, AudioService>();
 Builder.Services.AddScoped<IAdminService, AdminService>();
+Builder.Services.AddScoped<IDiagnosisService, DiagnosisService>();
 Builder.Services.AddScoped<ISummaryService, SummaryService>();
-
 //// Email
 //Builder.Services.Configure<EmailSettings>(
 //Builder.Configuration.GetSection("EmailSettings"));
@@ -139,7 +138,7 @@ Builder.Services.AddAutoMapper(typeof(MappingProfile));
 Builder.Services.AddFluentValidationAutoValidation();
 Builder.Services.AddValidatorsFromAssemblyContaining<CreateAppointmentValidator>();
 Builder.Services.AddScoped<IValidator<AudioUploadDto>, AudioUploadValidator>();
-
+Builder.Services.AddValidatorsFromAssemblyContaining<CreateAppointmentValidator>();
 
 // ── Background Job ────────────────────────────────────────────────────────────
 Builder.Services.AddHostedService<AudioCleanupJob>();
