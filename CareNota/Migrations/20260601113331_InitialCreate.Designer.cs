@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CareNota.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260402043850_InitialCreate")]
+    [Migration("20260601113331_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -33,8 +33,11 @@ namespace CareNota.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AISummaryID"));
 
-                    b.Property<float>("DoctorRating")
-                        .HasColumnType("real");
+                    b.Property<string>("DoctorFeedback")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("DoctorRating")
+                        .HasColumnType("int");
 
                     b.Property<string>("SummaryText")
                         .IsRequired()
@@ -52,6 +55,29 @@ namespace CareNota.Migrations
                     b.HasIndex("VisitID");
 
                     b.ToTable("AISummaries");
+                });
+
+            modelBuilder.Entity("CareNota.Models.Admin", b =>
+                {
+                    b.Property<int>("AdminId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AdminId"));
+
+                    b.Property<bool>("IsFirstLogin")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("AdminId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Admins");
                 });
 
             modelBuilder.Entity("CareNota.Models.ApplicationUser", b =>
@@ -144,9 +170,6 @@ namespace CareNota.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AppointmentID"));
 
-                    b.Property<DateTime>("AppointmentDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("AppointmentType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -157,17 +180,24 @@ namespace CareNota.Migrations
                     b.Property<int>("DoctorID")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("PatientID")
                         .HasColumnType("int");
 
                     b.Property<int>("ReceptionistID")
                         .HasColumnType("int");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.HasKey("AppointmentID");
+
+                    b.HasIndex("DoctorID");
 
                     b.HasIndex("PatientID");
 
@@ -178,11 +208,11 @@ namespace CareNota.Migrations
 
             modelBuilder.Entity("CareNota.Models.AudioRecord", b =>
                 {
-                    b.Property<int>("AudioRecordID")
+                    b.Property<int>("AudioID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AudioRecordID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AudioID"));
 
                     b.Property<string>("AudioFileURL")
                         .IsRequired()
@@ -197,7 +227,7 @@ namespace CareNota.Migrations
                     b.Property<int>("VisitID")
                         .HasColumnType("int");
 
-                    b.HasKey("AudioRecordID");
+                    b.HasKey("AudioID");
 
                     b.HasIndex("VisitID")
                         .IsUnique();
@@ -207,14 +237,22 @@ namespace CareNota.Migrations
 
             modelBuilder.Entity("CareNota.Models.Diagnosis", b =>
                 {
-                    b.Property<string>("ICD10Code")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("DiagnosisID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DiagnosisID"));
 
                     b.Property<string>("DiagnosisName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("ICD10Code");
+                    b.Property<int>("VisitID")
+                        .HasColumnType("int");
+
+                    b.HasKey("DiagnosisID");
+
+                    b.HasIndex("VisitID");
 
                     b.ToTable("Diagnoses");
                 });
@@ -226,10 +264,6 @@ namespace CareNota.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DoctorID"));
-
-                    b.Property<string>("DoctorName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Specialty")
                         .IsRequired()
@@ -458,7 +492,7 @@ namespace CareNota.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReminderID"));
 
-                    b.Property<int>("AppointmentID")
+                    b.Property<int?>("AppointmentID")
                         .HasColumnType("int");
 
                     b.Property<string>("Message")
@@ -468,7 +502,7 @@ namespace CareNota.Migrations
                     b.Property<int>("PatientID")
                         .HasColumnType("int");
 
-                    b.Property<int>("PrescriptionID")
+                    b.Property<int?>("PrescriptionID")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("ReminderDateTime")
@@ -501,23 +535,28 @@ namespace CareNota.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Assessment")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("FollowUpDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Objective")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Plan")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Subjective")
-                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Symptoms")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("VisitDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("WhenToSeekHelp")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("VisitID");
 
@@ -525,21 +564,6 @@ namespace CareNota.Migrations
                         .IsUnique();
 
                     b.ToTable("Visits");
-                });
-
-            modelBuilder.Entity("CareNota.Models.VisitDiagnosis", b =>
-                {
-                    b.Property<int>("VisitID")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ICD10Code")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("VisitID", "ICD10Code");
-
-                    b.HasIndex("ICD10Code");
-
-                    b.ToTable("VisitDiagnoses");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -686,8 +710,25 @@ namespace CareNota.Migrations
                     b.Navigation("Visit");
                 });
 
+            modelBuilder.Entity("CareNota.Models.Admin", b =>
+                {
+                    b.HasOne("CareNota.Models.ApplicationUser", "User")
+                        .WithOne("Admin")
+                        .HasForeignKey("CareNota.Models.Admin", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CareNota.Models.Appointment", b =>
                 {
+                    b.HasOne("CareNota.Models.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("CareNota.Models.Patient", "Patient")
                         .WithMany("Appointments")
                         .HasForeignKey("PatientID")
@@ -700,6 +741,8 @@ namespace CareNota.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Doctor");
+
                     b.Navigation("Patient");
 
                     b.Navigation("Receptionist");
@@ -710,6 +753,17 @@ namespace CareNota.Migrations
                     b.HasOne("CareNota.Models.Visit", "Visit")
                         .WithOne("AudioRecord")
                         .HasForeignKey("CareNota.Models.AudioRecord", "VisitID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Visit");
+                });
+
+            modelBuilder.Entity("CareNota.Models.Diagnosis", b =>
+                {
+                    b.HasOne("CareNota.Models.Visit", "Visit")
+                        .WithMany("Diagnoses")
+                        .HasForeignKey("VisitID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -806,8 +860,7 @@ namespace CareNota.Migrations
                     b.HasOne("CareNota.Models.Appointment", "Appointment")
                         .WithMany("Reminders")
                         .HasForeignKey("AppointmentID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("CareNota.Models.Patient", "Patient")
                         .WithMany("Reminders")
@@ -818,8 +871,7 @@ namespace CareNota.Migrations
                     b.HasOne("CareNota.Models.Prescription", "Prescription")
                         .WithMany("Reminders")
                         .HasForeignKey("PrescriptionID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Appointment");
 
@@ -837,25 +889,6 @@ namespace CareNota.Migrations
                         .IsRequired();
 
                     b.Navigation("Appointment");
-                });
-
-            modelBuilder.Entity("CareNota.Models.VisitDiagnosis", b =>
-                {
-                    b.HasOne("CareNota.Models.Diagnosis", "Diagnosis")
-                        .WithMany("VisitDiagnoses")
-                        .HasForeignKey("ICD10Code")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CareNota.Models.Visit", "Visit")
-                        .WithMany("VisitDiagnoses")
-                        .HasForeignKey("VisitID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Diagnosis");
-
-                    b.Navigation("Visit");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -911,6 +944,8 @@ namespace CareNota.Migrations
 
             modelBuilder.Entity("CareNota.Models.ApplicationUser", b =>
                 {
+                    b.Navigation("Admin");
+
                     b.Navigation("Doctor");
 
                     b.Navigation("Patient");
@@ -923,11 +958,6 @@ namespace CareNota.Migrations
                     b.Navigation("Reminders");
 
                     b.Navigation("Visit");
-                });
-
-            modelBuilder.Entity("CareNota.Models.Diagnosis", b =>
-                {
-                    b.Navigation("VisitDiagnoses");
                 });
 
             modelBuilder.Entity("CareNota.Models.Medication", b =>
@@ -962,11 +992,11 @@ namespace CareNota.Migrations
 
                     b.Navigation("AudioRecord");
 
+                    b.Navigation("Diagnoses");
+
                     b.Navigation("LabTests");
 
                     b.Navigation("Prescription");
-
-                    b.Navigation("VisitDiagnoses");
                 });
 #pragma warning restore 612, 618
         }

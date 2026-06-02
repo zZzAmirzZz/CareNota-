@@ -56,18 +56,6 @@ namespace CareNota.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Diagnoses",
-                columns: table => new
-                {
-                    ICD10Code = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    DiagnosisName = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Diagnoses", x => x.ICD10Code);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Medications",
                 columns: table => new
                 {
@@ -100,6 +88,26 @@ namespace CareNota.Migrations
                         name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Admins",
+                columns: table => new
+                {
+                    AdminId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IsFirstLogin = table.Column<bool>(type: "bit", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Admins", x => x.AdminId);
+                    table.ForeignKey(
+                        name: "FK_Admins_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -195,7 +203,6 @@ namespace CareNota.Migrations
                 {
                     DoctorID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DoctorName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Specialty = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
@@ -281,8 +288,9 @@ namespace CareNota.Migrations
                 {
                     AppointmentID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    AppointmentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EndTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     AppointmentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     PatientID = table.Column<int>(type: "int", nullable: false),
@@ -292,6 +300,12 @@ namespace CareNota.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Appointments", x => x.AppointmentID);
+                    table.ForeignKey(
+                        name: "FK_Appointments_Doctors_DoctorID",
+                        column: x => x.DoctorID,
+                        principalTable: "Doctors",
+                        principalColumn: "DoctorID",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Appointments_Patients_PatientID",
                         column: x => x.PatientID,
@@ -313,10 +327,13 @@ namespace CareNota.Migrations
                     VisitID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     VisitDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Subjective = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Objective = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Assessment = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Plan = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Subjective = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Objective = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Assessment = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Plan = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Symptoms = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    WhenToSeekHelp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FollowUpDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     AppointmentID = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -338,7 +355,8 @@ namespace CareNota.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     SummaryText = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SummaryType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DoctorRating = table.Column<float>(type: "real", nullable: false),
+                    DoctorRating = table.Column<int>(type: "int", nullable: true),
+                    DoctorFeedback = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     VisitID = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -356,7 +374,7 @@ namespace CareNota.Migrations
                 name: "AudioRecords",
                 columns: table => new
                 {
-                    AudioRecordID = table.Column<int>(type: "int", nullable: false)
+                    AudioID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     AudioFileURL = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -365,9 +383,29 @@ namespace CareNota.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AudioRecords", x => x.AudioRecordID);
+                    table.PrimaryKey("PK_AudioRecords", x => x.AudioID);
                     table.ForeignKey(
                         name: "FK_AudioRecords_Visits_VisitID",
+                        column: x => x.VisitID,
+                        principalTable: "Visits",
+                        principalColumn: "VisitID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Diagnoses",
+                columns: table => new
+                {
+                    DiagnosisID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DiagnosisName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    VisitID = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Diagnoses", x => x.DiagnosisID);
+                    table.ForeignKey(
+                        name: "FK_Diagnoses_Visits_VisitID",
                         column: x => x.VisitID,
                         principalTable: "Visits",
                         principalColumn: "VisitID",
@@ -416,30 +454,6 @@ namespace CareNota.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "VisitDiagnoses",
-                columns: table => new
-                {
-                    VisitID = table.Column<int>(type: "int", nullable: false),
-                    ICD10Code = table.Column<string>(type: "nvarchar(450)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_VisitDiagnoses", x => new { x.VisitID, x.ICD10Code });
-                    table.ForeignKey(
-                        name: "FK_VisitDiagnoses_Diagnoses_ICD10Code",
-                        column: x => x.ICD10Code,
-                        principalTable: "Diagnoses",
-                        principalColumn: "ICD10Code",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_VisitDiagnoses_Visits_VisitID",
-                        column: x => x.VisitID,
-                        principalTable: "Visits",
-                        principalColumn: "VisitID",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "PrescriptionMedications",
                 columns: table => new
                 {
@@ -478,8 +492,8 @@ namespace CareNota.Migrations
                     ReminderType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ReminderDateTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     PatientID = table.Column<int>(type: "int", nullable: false),
-                    PrescriptionID = table.Column<int>(type: "int", nullable: false),
-                    AppointmentID = table.Column<int>(type: "int", nullable: false)
+                    PrescriptionID = table.Column<int>(type: "int", nullable: true),
+                    AppointmentID = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -505,9 +519,20 @@ namespace CareNota.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Admins_UserId",
+                table: "Admins",
+                column: "UserId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AISummaries_VisitID",
                 table: "AISummaries",
                 column: "VisitID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Appointments_DoctorID",
+                table: "Appointments",
+                column: "DoctorID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Appointments_PatientID",
@@ -565,6 +590,11 @@ namespace CareNota.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Diagnoses_VisitID",
+                table: "Diagnoses",
+                column: "VisitID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Doctors_UserId",
                 table: "Doctors",
                 column: "UserId",
@@ -620,11 +650,6 @@ namespace CareNota.Migrations
                 column: "PrescriptionID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_VisitDiagnoses_ICD10Code",
-                table: "VisitDiagnoses",
-                column: "ICD10Code");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Visits_AppointmentID",
                 table: "Visits",
                 column: "AppointmentID",
@@ -634,6 +659,9 @@ namespace CareNota.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Admins");
+
             migrationBuilder.DropTable(
                 name: "AISummaries");
 
@@ -656,7 +684,7 @@ namespace CareNota.Migrations
                 name: "AudioRecords");
 
             migrationBuilder.DropTable(
-                name: "Doctors");
+                name: "Diagnoses");
 
             migrationBuilder.DropTable(
                 name: "LabTests");
@@ -671,9 +699,6 @@ namespace CareNota.Migrations
                 name: "Reminders");
 
             migrationBuilder.DropTable(
-                name: "VisitDiagnoses");
-
-            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
@@ -683,13 +708,13 @@ namespace CareNota.Migrations
                 name: "Prescriptions");
 
             migrationBuilder.DropTable(
-                name: "Diagnoses");
-
-            migrationBuilder.DropTable(
                 name: "Visits");
 
             migrationBuilder.DropTable(
                 name: "Appointments");
+
+            migrationBuilder.DropTable(
+                name: "Doctors");
 
             migrationBuilder.DropTable(
                 name: "Patients");

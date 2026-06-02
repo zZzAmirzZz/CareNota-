@@ -124,6 +124,8 @@ public class VisitService : IVisitService
 // ══════════════════════════════════════════════════════════════════════════════
 // DiagnosisService
 // ══════════════════════════════════════════════════════════════════════════════
+
+
 public class DiagnosisService : IDiagnosisService
 {
     private readonly IDiagnosisRepository _DiagnosisRepo;
@@ -140,24 +142,6 @@ public class DiagnosisService : IDiagnosisService
         _Mapper = Mapper;
     }
 
-    public async Task<IEnumerable<DiagnosisDto>> GetAllAsync()
-    {
-        var Diagnoses = await _DiagnosisRepo.GetAllAsync();
-        return _Mapper.Map<IEnumerable<DiagnosisDto>>(Diagnoses);
-    }
-
-    public async Task<DiagnosisDto?> GetByIcdCodeAsync(string ICD10Code)
-    {
-        var Diagnosis = await _DiagnosisRepo.GetByIcdCodeAsync(ICD10Code);
-        return Diagnosis is null ? null : _Mapper.Map<DiagnosisDto>(Diagnosis);
-    }
-
-    public async Task<IEnumerable<DiagnosisDto>> SearchAsync(string Query)
-    {
-        var Results = await _DiagnosisRepo.SearchByNameAsync(Query);
-        return _Mapper.Map<IEnumerable<DiagnosisDto>>(Results);
-    }
-
     public async Task<IEnumerable<DiagnosisDto>> GetByVisitIdAsync(int VisitId)
     {
         var Diagnoses = await _DiagnosisRepo.GetByVisitIdAsync(VisitId);
@@ -166,9 +150,8 @@ public class DiagnosisService : IDiagnosisService
 
     public async Task<DiagnosisDto> CreateAsync(CreateDiagnosisDto Dto)
     {
-        if (await _DiagnosisRepo.IcdCodeExistsAsync(Dto.ICD10Code))
-            throw new InvalidOperationException(
-                $"ICD-10 code '{Dto.ICD10Code}' already exists.");
+        if (!await _VisitRepo.ExistsAsync(V => V.VisitID == Dto.VisitID))
+            throw new KeyNotFoundException($"Visit {Dto.VisitID} not found.");
 
         var Diagnosis = _Mapper.Map<Diagnosis>(Dto);
         await _DiagnosisRepo.AddAsync(Diagnosis);
@@ -177,39 +160,10 @@ public class DiagnosisService : IDiagnosisService
         return _Mapper.Map<DiagnosisDto>(Diagnosis);
     }
 
-    public async Task AssignToVisitAsync(int VisitId, AssignDiagnosisToVisitDto Dto)
+    public async Task DeleteAsync(int DiagnosisId)
     {
-        if (!await _VisitRepo.ExistsAsync(V => V.VisitID == VisitId))
-            throw new KeyNotFoundException($"Visit {VisitId} not found.");
-
-        if (!await _DiagnosisRepo.IcdCodeExistsAsync(Dto.ICD10Code))
-            throw new KeyNotFoundException(
-                $"ICD-10 code '{Dto.ICD10Code}' not found. Create it first.");
-
-        if (await _DiagnosisRepo.VisitDiagnosisExistsAsync(VisitId, Dto.ICD10Code))
-            throw new InvalidOperationException(
-                $"Diagnosis '{Dto.ICD10Code}' is already assigned to this visit.");
-
-        await _DiagnosisRepo.AddVisitDiagnosisAsync(
-            new VisitDiagnosis { VisitID = VisitId, ICD10Code = Dto.ICD10Code });
-
-        await _DiagnosisRepo.SaveChangesAsync();
-    }
-
-    public async Task RemoveFromVisitAsync(int VisitId, string ICD10Code)
-    {
-        if (!await _DiagnosisRepo.VisitDiagnosisExistsAsync(VisitId, ICD10Code))
-            throw new KeyNotFoundException(
-                $"Diagnosis '{ICD10Code}' is not assigned to visit {VisitId}.");
-
-        await _DiagnosisRepo.RemoveVisitDiagnosisAsync(VisitId, ICD10Code);
-        await _DiagnosisRepo.SaveChangesAsync();
-    }
-
-    public async Task DeleteAsync(string ICD10Code)
-    {
-        var Diagnosis = await _DiagnosisRepo.GetByIcdCodeAsync(ICD10Code)
-            ?? throw new KeyNotFoundException($"ICD-10 code '{ICD10Code}' not found.");
+        var Diagnosis = await _DiagnosisRepo.GetByIdAsync(DiagnosisId)
+            ?? throw new KeyNotFoundException($"Diagnosis {DiagnosisId} not found.");
 
         _DiagnosisRepo.Remove(Diagnosis);
         await _DiagnosisRepo.SaveChangesAsync();

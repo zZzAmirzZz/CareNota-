@@ -106,6 +106,7 @@ public class VisitController : ControllerBase
 // ══════════════════════════════════════════════════════════════════════════════
 // DiagnosisController
 // ══════════════════════════════════════════════════════════════════════════════
+
 [ApiController]
 [Route("Api/[controller]")]
 [Authorize]
@@ -115,40 +116,13 @@ public class DiagnosisController : ControllerBase
 
     public DiagnosisController(IDiagnosisService Service) => _Service = Service;
 
-    // GET Api/Diagnosis
-    [HttpGet]
-    [Authorize(Roles = "Doctor,Receptionist,Patient")]
-    public async Task<IActionResult> GetAll()
-        => Ok(await _Service.GetAllAsync());
-
-    // GET Api/Diagnosis/{icdCode}   e.g. Api/Diagnosis/J18.9
-    [HttpGet("{IcdCode}")]
-    [Authorize(Roles = "Doctor,Receptionist,Patient")]
-    public async Task<IActionResult> GetByCode(string IcdCode)
-    {
-        var Diagnosis = await _Service.GetByIcdCodeAsync(IcdCode);
-        return Diagnosis is null
-            ? NotFound(new { Message = $"ICD-10 code '{IcdCode}' not found." })
-            : Ok(Diagnosis);
-    }
-
-    // GET Api/Diagnosis/Search?query=pneumonia
-    [HttpGet("Search")]
-    [Authorize(Roles = "Doctor,Receptionist")]
-    public async Task<IActionResult> Search([FromQuery] string Query)
-    {
-        if (string.IsNullOrWhiteSpace(Query))
-            return BadRequest(new { Message = "Search query is required." });
-        return Ok(await _Service.SearchAsync(Query));
-    }
-
     // GET Api/Diagnosis/Visit/{visitId}
     [HttpGet("Visit/{VisitId:int}")]
     [Authorize(Roles = "Doctor,Receptionist,Patient")]
     public async Task<IActionResult> GetByVisit(int VisitId)
         => Ok(await _Service.GetByVisitIdAsync(VisitId));
 
-    // POST Api/Diagnosis  ← add a new ICD-10 code to the system catalog
+    // POST Api/Diagnosis  ← manual add by doctor
     [HttpPost]
     [Authorize(Roles = "Doctor")]
     public async Task<IActionResult> Create([FromBody] CreateDiagnosisDto Dto)
@@ -156,59 +130,31 @@ public class DiagnosisController : ControllerBase
         try
         {
             var Created = await _Service.CreateAsync(Dto);
-            return CreatedAtAction(nameof(GetByCode), new { IcdCode = Created.ICD10Code }, Created);
-        }
-        catch (InvalidOperationException Ex) { return Conflict(new { Ex.Message }); }
-    }
-
-    // POST Api/Diagnosis/Visit/{visitId}/Assign  ← link ICD-10 to a visit
-    [HttpPost("Visit/{VisitId:int}/Assign")]
-    [Authorize(Roles = "Doctor")]
-    public async Task<IActionResult> AssignToVisit(
-        int VisitId, [FromBody] AssignDiagnosisToVisitDto Dto)
-    {
-        try
-        {
-            await _Service.AssignToVisitAsync(VisitId, Dto);
-            return Ok(new { Message = $"Diagnosis '{Dto.ICD10Code}' assigned to visit {VisitId}." });
-        }
-        catch (KeyNotFoundException Ex) { return NotFound(new { Ex.Message }); }
-        catch (InvalidOperationException Ex) { return Conflict(new { Ex.Message }); }
-    }
-
-    // DELETE Api/Diagnosis/Visit/{visitId}/{icdCode}  ← unlink from visit
-    [HttpDelete("Visit/{VisitId:int}/{IcdCode}")]
-    [Authorize(Roles = "Doctor")]
-    public async Task<IActionResult> RemoveFromVisit(int VisitId, string IcdCode)
-    {
-        try
-        {
-            await _Service.RemoveFromVisitAsync(VisitId, IcdCode);
-            return NoContent();
+            return CreatedAtAction(nameof(GetByVisit),
+                new { VisitId = Created.VisitID }, Created);
         }
         catch (KeyNotFoundException Ex) { return NotFound(new { Ex.Message }); }
     }
 
-    // DELETE Api/Diagnosis/{icdCode}  ← remove from catalog entirely
-    [HttpDelete("{IcdCode}")]
+    // DELETE Api/Diagnosis/{id}
+    [HttpDelete("{Id:int}")]
     [Authorize(Roles = "Doctor")]
-    public async Task<IActionResult> Delete(string IcdCode)
+    public async Task<IActionResult> Delete(int Id)
     {
         try
         {
-            await _Service.DeleteAsync(IcdCode);
+            await _Service.DeleteAsync(Id);
             return NoContent();
         }
         catch (KeyNotFoundException Ex) { return NotFound(new { Ex.Message }); }
     }
 }
-
 // ══════════════════════════════════════════════════════════════════════════════
 // PrescriptionController
 // ══════════════════════════════════════════════════════════════════════════════
 [ApiController]
 [Route("Api/[controller]")]
-[Authorize]
+//[Authorize]
 public class PrescriptionController : ControllerBase
 {
     private readonly IPrescriptionService _Service;
@@ -217,7 +163,7 @@ public class PrescriptionController : ControllerBase
 
     // GET Api/Prescription/{id}
     [HttpGet("{Id:int}")]
-    [Authorize(Roles = "Doctor,Receptionist,Patient")]
+    //[Authorize(Roles = "Doctor,Receptionist,Patient")]
     public async Task<IActionResult> GetById(int Id)
     {
         var Prescription = await _Service.GetByIdAsync(Id);
@@ -228,7 +174,7 @@ public class PrescriptionController : ControllerBase
 
     // GET Api/Prescription/Visit/{visitId}
     [HttpGet("Visit/{VisitId:int}")]
-    [Authorize(Roles = "Doctor,Receptionist,Patient")]
+    //[Authorize(Roles = "Doctor,Receptionist,Patient")]
     public async Task<IActionResult> GetByVisit(int VisitId)
     {
         var Prescription = await _Service.GetByVisitIdAsync(VisitId);
@@ -239,7 +185,7 @@ public class PrescriptionController : ControllerBase
 
     // POST Api/Prescription
     [HttpPost]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> Create([FromBody] CreatePrescriptionDto Dto)
     {
         try
@@ -253,7 +199,7 @@ public class PrescriptionController : ControllerBase
 
     // PUT Api/Prescription/{id}
     [HttpPut("{Id:int}")]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> Update(int Id, [FromBody] UpdatePrescriptionDto Dto)
     {
         try
@@ -266,7 +212,7 @@ public class PrescriptionController : ControllerBase
 
     // POST Api/Prescription/{id}/Medications  ← add a medication to prescription
     [HttpPost("{Id:int}/Medications")]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> AddMedication(
         int Id, [FromBody] AddMedicationToPrescriptionDto Dto)
     {
@@ -281,7 +227,7 @@ public class PrescriptionController : ControllerBase
 
     // DELETE Api/Prescription/{id}/Medications/{medicationId}
     [HttpDelete("{Id:int}/Medications/{MedicationId:int}")]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> RemoveMedication(int Id, int MedicationId)
     {
         try
@@ -311,7 +257,7 @@ public class PrescriptionController : ControllerBase
 // ══════════════════════════════════════════════════════════════════════════════
 [ApiController]
 [Route("Api/[controller]")]
-[Authorize]
+//[Authorize]
 public class MedicationController : ControllerBase
 {
     private readonly IMedicationService _Service;
@@ -353,7 +299,7 @@ public class MedicationController : ControllerBase
 
     // POST Api/Medication
     [HttpPost]
-    [Authorize(Roles = "Doctor")]
+    //[Authorize(Roles = "Doctor")]
     public async Task<IActionResult> Create([FromBody] CreateMedicationDto Dto)
     {
         try

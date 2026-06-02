@@ -1,6 +1,7 @@
 ﻿using CareNota.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace CareNota.Data;
 
@@ -25,7 +26,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     
     public DbSet<AISummary> AISummaries { get; set; }
     public DbSet<Diagnosis> Diagnoses { get; set; }
-    public DbSet<VisitDiagnosis> VisitDiagnoses { get; set; }
+    
     public DbSet<Reminder> Reminders { get; set; }
 
     protected override void OnModelCreating(ModelBuilder Builder)
@@ -134,25 +135,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(PM => PM.MedicationID)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // ── Diagnosis: string PK (ICD-10 code) ────────────────────────────────
+
+        // ADD — Diagnosis → Visit (simple one-to-many)
         Builder.Entity<Diagnosis>()
-            .HasKey(D => D.ICD10Code);
-
-        // ── VisitDiagnosis: Composite PK (VisitID, ICD10Code) ─────────────────
-        Builder.Entity<VisitDiagnosis>()
-            .HasKey(VD => new { VD.VisitID, VD.ICD10Code });
-
-        Builder.Entity<VisitDiagnosis>()
-            .HasOne(VD => VD.Visit)
-            .WithMany(V => V.VisitDiagnoses)
-            .HasForeignKey(VD => VD.VisitID)
+            .HasOne(D => D.Visit)
+            .WithMany(V => V.Diagnoses)
+            .HasForeignKey(D => D.VisitID)
             .OnDelete(DeleteBehavior.Cascade);
 
-        Builder.Entity<VisitDiagnosis>()
-            .HasOne(VD => VD.Diagnosis)
-            .WithMany(D => D.VisitDiagnoses)
-            .HasForeignKey(VD => VD.ICD10Code)
-            .OnDelete(DeleteBehavior.Restrict);
 
         // ── Reminder → Patient (M-to-1) ────────────────────────────────────────
         Builder.Entity<Reminder>()

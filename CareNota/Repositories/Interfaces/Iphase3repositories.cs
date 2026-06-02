@@ -22,15 +22,9 @@ public interface IVisitRepository : IRepository<Visit>
 // ══════════════════════════════════════════════════════════════════════════════
 public interface IDiagnosisRepository : IRepository<Diagnosis>
 {
-    Task<Diagnosis?> GetByIcdCodeAsync(string ICD10Code);
-    Task<IEnumerable<Diagnosis>> SearchByNameAsync(string Name);
     Task<IEnumerable<Diagnosis>> GetByVisitIdAsync(int VisitId);
-    Task<bool> IcdCodeExistsAsync(string ICD10Code);
-    Task AddVisitDiagnosisAsync(VisitDiagnosis VisitDiagnosis);
-    Task RemoveVisitDiagnosisAsync(int VisitId, string ICD10Code);
-    Task<bool> VisitDiagnosisExistsAsync(int VisitId, string ICD10Code);
+    Task<bool> ExistsForVisitAsync(int VisitId, string DiagnosisName);
 }
-
 // ══════════════════════════════════════════════════════════════════════════════
 // IPrescriptionRepository
 // ══════════════════════════════════════════════════════════════════════════════

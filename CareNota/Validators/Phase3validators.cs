@@ -82,31 +82,15 @@ public class CreateDiagnosisValidator : AbstractValidator<CreateDiagnosisDto>
 {
     public CreateDiagnosisValidator()
     {
-        RuleFor(x => x.ICD10Code)
-            .NotEmpty().WithMessage("ICD10 code is required.")
-            .MaximumLength(10).WithMessage("ICD10 code cannot exceed 10 characters.")
-            .Matches(@"^[A-Z][0-9]{2}(\.[0-9A-Z]{1,4})?$")
-            .WithMessage("ICD10 code format is invalid (e.g. A00 or A00.1).");
-
         RuleFor(x => x.DiagnosisName)
             .NotEmpty().WithMessage("Diagnosis name is required.")
-            .MaximumLength(200).WithMessage("Diagnosis name cannot exceed 200 characters.");
+            .MaximumLength(300).WithMessage("Diagnosis name cannot exceed 300 characters.");
+
+        RuleFor(x => x.VisitID)
+            .GreaterThan(0).WithMessage("VisitID must be a valid positive number.");
     }
 }
-// Validators/Diagnosis/AssignDiagnosisToVisitValidator.cs
 
-
-public class AssignDiagnosisToVisitValidator : AbstractValidator<AssignDiagnosisToVisitDto>
-{
-    public AssignDiagnosisToVisitValidator()
-    {
-        RuleFor(x => x.ICD10Code)
-            .NotEmpty().WithMessage("ICD10 code is required.")
-            .MaximumLength(10).WithMessage("ICD10 code cannot exceed 10 characters.")
-            .Matches(@"^[A-Z][0-9]{2}(\.[0-9A-Z]{1,4})?$")
-            .WithMessage("ICD10 code format is invalid (e.g. A00 or A00.1).");
-    }
-}
 // Validators/Doctor/UpdateDoctorValidator.cs
 
 public class UpdateDoctorValidator : AbstractValidator<UpdateDoctorDto>
@@ -290,6 +274,8 @@ public class AddMedicationToPrescriptionValidator : AbstractValidator<AddMedicat
 // AppointmentID is the only required field.
 // SOAP fields are optional — doctor may fill them now (manual path)
 // or leave them empty and use the AI recording flow later.
+
+
 public class CreateVisitValidator : AbstractValidator<CreateVisitDto>
 {
     public CreateVisitValidator()
@@ -299,69 +285,66 @@ public class CreateVisitValidator : AbstractValidator<CreateVisitDto>
             .WithMessage("AppointmentID must be a valid positive number.");
 
         RuleFor(x => x.VisitDate)
-            .NotEmpty()
-            .WithMessage("Visit date is required.")
-            .LessThanOrEqualTo(DateTime.UtcNow)
-            .WithMessage("Visit date cannot be in the future.");
+            .NotEmpty().WithMessage("Visit date is required.");
+            //.LessThanOrEqualTo(DateTime.UtcNow)
+            //.WithMessage("Visit date cannot be in the future.");
 
-        // SOAP fields validated only if the doctor chose to fill them at creation
         RuleFor(x => x.Subjective)
-            .MaximumLength(2000)
-            .WithMessage("Subjective cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Subjective cannot exceed 2000 characters.")
             .When(x => x.Subjective is not null);
 
         RuleFor(x => x.Objective)
-            .MaximumLength(2000)
-            .WithMessage("Objective cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Objective cannot exceed 2000 characters.")
             .When(x => x.Objective is not null);
 
         RuleFor(x => x.Assessment)
-            .MaximumLength(2000)
-            .WithMessage("Assessment cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Assessment cannot exceed 2000 characters.")
             .When(x => x.Assessment is not null);
 
         RuleFor(x => x.Plan)
-            .MaximumLength(2000)
-            .WithMessage("Plan cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Plan cannot exceed 2000 characters.")
             .When(x => x.Plan is not null);
+
+        RuleFor(x => x.Symptoms)
+            .MaximumLength(2000).WithMessage("Symptoms cannot exceed 2000 characters.")
+            .When(x => x.Symptoms is not null);
     }
 }
 
 // ── UpdateVisitValidator ──────────────────────────────────────────────────────
 // Used for both manual SOAP updates and WhenToSeekHelp / FollowUpDate.
 // Every field is optional — validate only what is present in the request.
+
 public class UpdateVisitValidator : AbstractValidator<UpdateVisitDto>
 {
     public UpdateVisitValidator()
     {
         RuleFor(x => x.Subjective)
-            .MaximumLength(2000)
-            .WithMessage("Subjective cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Subjective cannot exceed 2000 characters.")
             .When(x => x.Subjective is not null);
 
         RuleFor(x => x.Objective)
-            .MaximumLength(2000)
-            .WithMessage("Objective cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Objective cannot exceed 2000 characters.")
             .When(x => x.Objective is not null);
 
         RuleFor(x => x.Assessment)
-            .MaximumLength(2000)
-            .WithMessage("Assessment cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Assessment cannot exceed 2000 characters.")
             .When(x => x.Assessment is not null);
 
         RuleFor(x => x.Plan)
-            .MaximumLength(2000)
-            .WithMessage("Plan cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Plan cannot exceed 2000 characters.")
             .When(x => x.Plan is not null);
 
+        RuleFor(x => x.Symptoms)
+            .MaximumLength(2000).WithMessage("Symptoms cannot exceed 2000 characters.")
+            .When(x => x.Symptoms is not null);
+
         RuleFor(x => x.WhenToSeekHelp)
-            .MaximumLength(2000)
-            .WithMessage("WhenToSeekHelp cannot exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("WhenToSeekHelp cannot exceed 2000 characters.")
             .When(x => x.WhenToSeekHelp is not null);
 
-        RuleFor(x => x.FollowUpDate)
-            .GreaterThan(DateTime.UtcNow)
-            .WithMessage("Follow-up date must be in the future.")
-            .When(x => x.FollowUpDate is not null);
+        RuleFor(x => x.FollowUp)
+     .NotEmpty().WithMessage("Follow up is required.")
+     .MaximumLength(500).WithMessage("Follow up cannot exceed 500 characters.");
     }
 }
