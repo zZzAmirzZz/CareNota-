@@ -2,6 +2,7 @@
 using CareNota.Models;
 using CareNota.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace CareNota.Services;
 
@@ -9,11 +10,13 @@ public class ReminderService : IReminderService
 {
     private readonly ApplicationDbContext _context;
     private readonly IEmailService _emailService;
+    private readonly ILogger<ReminderService> _logger;
 
-    public ReminderService(ApplicationDbContext context, IEmailService emailService)
+    public ReminderService(ApplicationDbContext context, IEmailService emailService, ILogger<ReminderService> logger)
     {
         _context = context;
         _emailService = emailService;
+        _logger = logger;
     }
 
     // ── 1. CONFIRMATION (fires on appointment creation) ───────────────────
@@ -25,8 +28,9 @@ public class ReminderService : IReminderService
 
         var email = appointment.Patient.User.Email!;
         var name = appointment.Patient.User.FullName;
-
-        await _emailService.SendAsync(
+        try
+        {
+            await _emailService.SendAsync(
             email, name,
             "Your Appointment is Confirmed – CareNota",
             EmailTemplates.AppointmentConfirmation(
@@ -34,7 +38,10 @@ public class ReminderService : IReminderService
                 appointment.Doctor.User.FullName,
                 appointment.StartTime,
                 appointment.AppointmentType));
-
+        } catch (Exception ex) 
+        {
+            _logger.LogError(ex, "Error occurred while sending appointment confirmation email for appointment ID: {AppointmentId}", appointment.AppointmentID);
+        }
         _context.Reminders.Add(new Reminder
         {
             PatientID = appointment.PatientID,
@@ -42,7 +49,9 @@ public class ReminderService : IReminderService
             ReminderType = "AppointmentConfirmation",
             Message = $"Confirmation email sent for appointment on {appointment.StartTime:f}",
             ReminderDateTime = DateTime.UtcNow
-        });
+        } 
+      );
+
 
         await _context.SaveChangesAsync();
     }
@@ -56,14 +65,19 @@ public class ReminderService : IReminderService
 
         var email = appointment.Patient.User.Email!;
         var name = appointment.Patient.User.FullName;
-
-        await _emailService.SendAsync(
+        try {
+            await _emailService.SendAsync(
             email, name,
             "Your Appointment Has Been Cancelled – CareNota",
             EmailTemplates.AppointmentCancelled(
                 name,
                 appointment.Doctor.User.FullName,
-                appointment.StartTime));
+                appointment.StartTime)); 
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while sending appointment cancellation email for appointment ID: {AppointmentId}", appointment.AppointmentID);
+        }
 
         _context.Reminders.Add(new Reminder
         {
