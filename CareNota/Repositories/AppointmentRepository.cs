@@ -26,7 +26,14 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Include(a => a.Receptionist).ThenInclude(r => r.User)
             .Include(a => a.Visit)
             .FirstOrDefaultAsync(a => a.AppointmentID == appointmentId);
-
+    public async Task<Appointment?> GetWithDependentsAsync(int appointmentId)
+    {
+        return await Context.Appointments
+            .Include(a => a.Visit)
+                .ThenInclude(v => v!.Prescription)
+            .Include(a => a.Reminders)
+            .FirstOrDefaultAsync(a => a.AppointmentID == appointmentId);
+    }
     public async Task<Appointment?> GetFullDetailsAsync(int appointmentId)
         => await DbSet
             .Include(a => a.Patient).ThenInclude(p => p.User)

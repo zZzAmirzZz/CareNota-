@@ -68,7 +68,7 @@ Builder.Services.AddHttpClient<IAIService, AIService>(Client =>
         Builder.Configuration.GetValue<int>("AIService:TimeoutMinutes", 5));
 });
 // ── Controllers + Swagger ───────────────────────────────────────────────────
-//Builder.Services.AddControllers();
+
 
 Builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -126,11 +126,11 @@ Builder.Services.AddScoped<IAudioService, AudioService>();
 Builder.Services.AddScoped<IAdminService, AdminService>();
 Builder.Services.AddScoped<IDiagnosisService, DiagnosisService>();
 Builder.Services.AddScoped<ISummaryService, SummaryService>();
-//// Email
-//Builder.Services.Configure<EmailSettings>(
-//Builder.Configuration.GetSection("EmailSettings"));
-//Builder.Services.AddScoped<IEmailService, EmailService>();
-//Builder.Services.AddScoped<IReminderService, ReminderService>();
+// Email
+Builder.Services.Configure<EmailSettings>(
+Builder.Configuration.GetSection("EmailSettings"));
+Builder.Services.AddScoped<IEmailService, EmailService>();
+Builder.Services.AddScoped<IReminderService, ReminderService>();
 
 // ── FluentValidation ─────────────────────────────────────────────────────────
 
@@ -159,28 +159,17 @@ Builder.Services.Configure<FormOptions>(Options =>
 Builder.Services.AddAutoMapper(typeof(Program));
 
 
-// CORS
-Builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAngular",
-        policy =>
-        {
-            policy
-                .WithOrigins("http://localhost:4200")
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
-});
+
 // CORS
 
-//Builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("AllowAll",
-//        policy => policy
-//            .AllowAnyOrigin()
-//            .AllowAnyMethod()
-//            .AllowAnyHeader());
-//});
+Builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
 // ── JWT Authentication ───────────────────────────────────────────────────────
 Builder.Services.AddAuthentication(options =>
 {

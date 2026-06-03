@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CareNota.Data;
 using CareNota.DTOs;
 using CareNota.DTOs.Appointment;
 using CareNota.Models;
@@ -13,17 +14,23 @@ public class AppointmentService : IAppointmentService
     private readonly IPatientRepository _patientRepo;
     private readonly IMapper _mapper;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IReminderService _reminderService;
+    private readonly ApplicationDbContext _context;
 
     public AppointmentService(
         IAppointmentRepository appointmentRepo,
         IPatientRepository patientRepo,
         IMapper mapper,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        IReminderService reminderService,
+        ApplicationDbContext context)
     {
         _appointmentRepo = appointmentRepo;
         _patientRepo = patientRepo;
         _mapper = mapper;
         _scopeFactory = scopeFactory;
+        _reminderService = reminderService;
+        _context = context;
     }
 
     // ── READ ─────────────────────────────────────────
@@ -152,16 +159,14 @@ public class AppointmentService : IAppointmentService
         await _appointmentRepo.AddAsync(appointment);
         await _appointmentRepo.SaveChangesAsync();
 
-        //// Fire confirmation email in background with its own scope
-        //var appointmentId = appointment.AppointmentID;
-        //_ = Task.Run(async () =>
-        //{
-        //    using var scope = _scopeFactory.CreateScope();
-        //    var reminderService = scope.ServiceProvider
-        //        .GetRequiredService<IReminderService>();
-        //    await reminderService.SendAppointmentConfirmationAsync(appointmentId);
-        //});
 
+        // Fire confirmation email (don't await to block the response)
+        _ = Task.Run(async () =>
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var reminderService = scope.ServiceProvider.GetRequiredService<IReminderService>();
+            await reminderService.SendAppointmentConfirmationAsync(appointment.AppointmentID);
+        });
         var created = await _appointmentRepo.GetWithVisitAsync(appointment.AppointmentID);
         return _mapper.Map<AppointmentDto>(created!);
     }
@@ -209,22 +214,36 @@ public class AppointmentService : IAppointmentService
         await _appointmentRepo.SaveChangesAsync();
 
         // Fire cancellation email in background with its own scope
-        //_ = Task.Run(async () =>
-        //{
-        //    using var scope = _scopeFactory.CreateScope();
-        //    var reminderService = scope.ServiceProvider
-        //        .GetRequiredService<IReminderService>();
-        //    await reminderService.SendAppointmentCancellationAsync(appointmentId);
-        //});
-    }
+        _ = Task.Run(async () =>
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var reminderService = scope.ServiceProvider.GetRequiredService<IReminderService>();
+            await reminderService.SendAppointmentCancellationAsync(appointmentId);
+        });
+        }
+
 
     // ── DELETE ──────────────────────────────────────
 
     public async Task DeleteAsync(int appointmentId)
     {
-        var appointment = await _appointmentRepo.GetByIdAsync(appointmentId)
+        var appointment = await _appointmentRepo.GetWithDependentsAsync(appointmentId)
             ?? throw new KeyNotFoundException("Appointment not found.");
 
+        // Delete Reminders first
+        if (appointment.Reminders.Any())
+            _context.Reminders.RemoveRange(appointment.Reminders);
+
+        // Delete Visit and its Prescription if exists
+        if (appointment.Visit != null)
+        {
+            if (appointment.Visit.Prescription != null)
+                _context.Prescriptions.RemoveRange(appointment.Visit.Prescription);
+
+            _context.Visits.Remove(appointment.Visit);
+        }
+
+        // Now safe to delete the appointment
         _appointmentRepo.Remove(appointment);
         await _appointmentRepo.SaveChangesAsync();
     }

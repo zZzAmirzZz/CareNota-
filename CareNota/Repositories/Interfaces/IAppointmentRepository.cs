@@ -6,6 +6,7 @@ public interface IAppointmentRepository : IRepository<Appointment>
     // ── Single / Details ─────────────────────────────
     Task<Appointment?> GetWithVisitAsync(int appointmentId);
     Task<Appointment?> GetFullDetailsAsync(int appointmentId);
+    Task<Appointment?> GetWithDependentsAsync(int appointmentId);
 
     // ── Filters ──────────────────────────────────────
     Task<IEnumerable<Appointment>> GetByPatientIdAsync(int patientId);
