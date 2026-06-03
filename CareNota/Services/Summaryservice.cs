@@ -66,7 +66,8 @@ public class SummaryService : ISummaryService
                 Subjective = DoctorData.Subjective,
                 Objective = DoctorData.Objective,
                 Assessment = DoctorData.Assessment,
-                Plan = DoctorData.Plan
+                Plan = DoctorData.Plan,
+                  ComparisonWithPreviousVisit = DoctorData.ComparisonWithPreviousVisit
             },
             PatientSummary = new PatientSummaryDto
             {
@@ -94,7 +95,8 @@ public class SummaryService : ISummaryService
         if (Dto.Objective is not null) DoctorData.Objective = Dto.Objective;
         if (Dto.Assessment is not null) DoctorData.Assessment = Dto.Assessment;
         if (Dto.Plan is not null) DoctorData.Plan = Dto.Plan;
-
+        if (Dto.ComparisonWithPreviousVisit is not null)
+            DoctorData.ComparisonWithPreviousVisit = Dto.ComparisonWithPreviousVisit;
         DoctorRecord.SummaryText = JsonSerializer.Serialize(DoctorData);
 
         // ── Patient-side (Arabic) ─────────────────────────────────────────────
