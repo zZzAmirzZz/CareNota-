@@ -30,10 +30,10 @@ public class CreateAppointmentValidator : AbstractValidator<CreateAppointmentDto
 
         // ── Time Validation ─────────────────────────────
 
-        RuleFor(x => x.StartTime)
-            .NotEmpty().WithMessage("Start time is required.")
-            .GreaterThan(DateTime.UtcNow)
-            .WithMessage("Start time must be in the future.");
+        //RuleFor(x => x.StartTime)
+        //    .NotEmpty().WithMessage("Start time is required.")
+        //    .GreaterThan(DateTime.UtcNow)
+        //    .WithMessage("Start time must be in the future.");
 
         RuleFor(x => x.EndTime)
             .NotEmpty().WithMessage("End time is required.")

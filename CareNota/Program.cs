@@ -131,7 +131,6 @@ Builder.Services.Configure<EmailSettings>(
 Builder.Configuration.GetSection("EmailSettings"));
 Builder.Services.AddScoped<IEmailService, EmailService>();
 Builder.Services.AddScoped<IReminderService, ReminderService>();
-
 // ── FluentValidation ─────────────────────────────────────────────────────────
 
 Builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -166,7 +165,7 @@ Builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         policy => policy
-            .AllowAnyOrigin()
+           . WithOrigins("http://localhost:4200")
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
@@ -241,7 +240,7 @@ if (App.Environment.IsDevelopment())
 
 // ✅ Correct order — do not change this sequence
 App.UseRouting();
-App.UseCors("AllowAngular");          // 1️⃣ CORS first
+App.UseCors("AllowAll");          // 1️⃣ CORS first
 if (App.Environment.IsDevelopment())
    
 App.UseAuthentication();          // 3️⃣ Who are you?  ← was completely missing

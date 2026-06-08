@@ -4,10 +4,8 @@ namespace CareNota.Models;
 
 public class ApplicationUser : IdentityUser
 {
-    // Maps to your old FirstName + LastName
     public string FullName { get; set; } = string.Empty;
     public string Gender { get; set; } = string.Empty;
-    // Role is handled by Identity — no need to store it manually
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Refresh Token support

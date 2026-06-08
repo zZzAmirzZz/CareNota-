@@ -67,6 +67,7 @@ public class SummaryService : ISummaryService
                 Objective = DoctorData.Objective,
                 Assessment = DoctorData.Assessment,
                 Plan = DoctorData.Plan,
+
                   ComparisonWithPreviousVisit = DoctorData.ComparisonWithPreviousVisit
             },
             PatientSummary = new PatientSummaryDto
@@ -75,7 +76,8 @@ public class SummaryService : ISummaryService
                 Diagnosis = PatientData.Diagnosis,
                 Symptoms = PatientData.Symptoms,
                 TreatmentPlan = PatientData.TreatmentPlan,
-                WhenToSeekHelp = PatientData.WhenToSeekHelp
+                WhenToSeekHelp = PatientData.WhenToSeekHelp,
+                   FollowUp = PatientData.FollowUp
             }
         };
     }
@@ -101,7 +103,8 @@ public class SummaryService : ISummaryService
 
         // ── Patient-side (Arabic) ─────────────────────────────────────────────
         if (Dto.Diagnosis is not null || Dto.Symptoms is not null ||
-            Dto.TreatmentPlan is not null || Dto.WhenToSeekHelp is not null)
+     Dto.TreatmentPlan is not null || Dto.WhenToSeekHelp is not null ||
+     Dto.FollowUp is not null)   
         {
             var PatientRecord = await _AISummaryRepository.GetByVisitAndTypeAsync(VisitId, "Patient");
             if (PatientRecord is not null)

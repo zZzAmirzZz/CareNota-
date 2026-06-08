@@ -12,7 +12,7 @@ public class AISummary
     // SummaryType = "Patient" → { diagnosis, symptoms, treatment_plan, when_to_seek_help, follow_up }
     public string SummaryType { get; set; } = string.Empty;
 
-    // Optional — doctor rates after reviewing (1–5), used for model improvement
+    // doctor rates after reviewing (1–5), used for model improvement
     public int? DoctorRating { get; set; }
     public string? DoctorFeedback { get; set; }
 

@@ -31,6 +31,11 @@ public class AIService : IAIService
         _AISummaryRepository = AISummaryRepository;
         _Configuration = Configuration;
         _Logger = Logger;
+
+        // Add ngrok header if configured — only set during ngrok tunnel testing,
+        // remove from appsettings when AI team moves to a real server
+        if (_Configuration.GetValue<bool>("AIService:SkipNgrokWarning"))
+            _HttpClient.DefaultRequestHeaders.Add("ngrok-skip-browser-warning", "true");
     }
 
     public async Task ProcessAudioAsync(string AudioUrl, int VisitId)
@@ -70,14 +75,6 @@ public class AIService : IAIService
         }
 
         // ── 4. Save two DRAFT rows ────────────────────────────────────────────
-        //
-        //  "Doctor"  → { subjective, objective, assessment, plan }
-        //  "Patient" → { diagnosis, symptoms, treatmentPlan, whenToSeekHelp, followUp }
-        //
-        //  Both are drafts. Doctor reviews via GET /summary,
-        //  edits via PUT /summary, finalises via POST /summary/approve.
-        //  On approve → SOAP + WhenToSeekHelp + FollowUpDate written to Visit.
-
         if (Result?.DoctorSummary is not null)
             await _AISummaryRepository.AddAsync(new AISummary
             {
