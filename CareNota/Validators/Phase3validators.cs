@@ -208,7 +208,9 @@ public class UpdatePatientValidator : AbstractValidator<UpdatePatientDto>
         RuleFor(x => x.InsuranceInfo)
             .MaximumLength(300).WithMessage("Insurance info cannot exceed 300 characters.")
             .When(x => !string.IsNullOrEmpty(x.InsuranceInfo));
+
     }
+
 }
 // Validators/Prescription/CreatePrescriptionValidator.cs
 

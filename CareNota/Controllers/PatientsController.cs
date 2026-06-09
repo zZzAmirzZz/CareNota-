@@ -33,17 +33,17 @@ public class PatientController : ControllerBase
         return Ok(data);
     }
 
-    // 🔹 Details
-    [HttpGet("{id}/details")]
-    public async Task<IActionResult> GetDetails(int id)
-    {
-        var data = await _service.GetDetailsAsync(id);
+    //// 🔹 Details
+    //[HttpGet("{id}/details")]
+    //public async Task<IActionResult> GetDetails(int id)
+    //{
+    //    var data = await _service.GetDetailsAsync(id);
 
-        if (data == null)
-            return NotFound();
+    //    if (data == null)
+    //        return NotFound();
 
-        return Ok(data);
-    }
+    //    return Ok(data);
+    //}
 
     // 🔹 Search
     [HttpGet("search")]

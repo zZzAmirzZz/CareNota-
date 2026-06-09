@@ -26,13 +26,15 @@ public class MappingProfile : Profile
                 O => O.MapFrom(S => S.User.Email))
             .ForMember(D => D.PhoneNumber,
                 O => O.MapFrom(S => S.User.PhoneNumber))
-            .ForMember(D => D.Age,
-                O => O.MapFrom(S => CalculateAge(S.DateOfBirth)));
+             .ForMember(D => D.Age,
+                O => O.MapFrom(S => S.DateOfBirth.HasValue
+                ? CalculateAge(S.DateOfBirth.Value)
+               : (int?)null));
 
         CreateMap<Patient, PatientDetailDto>()
             .IncludeBase<Patient, PatientDto>();
 
-        CreateMap<MedicalHistory, MedicalHistorySummaryDto>();
+     
         CreateMap<Appointment, AppointmentSummaryDto>();
 
         CreateMap<UpdatePatientDto, Patient>()
@@ -40,7 +42,7 @@ public class MappingProfile : Profile
             .ForMember(D => D.UserId, O => O.Ignore())
             .ForMember(D => D.User, O => O.Ignore())
             .ForMember(D => D.DateOfBirth, O => O.Ignore())
-            .ForMember(D => D.MedicalHistory, O => O.Ignore())
+            .ForMember(D => D.ChronicConditions, O => O.Ignore())
             .ForMember(D => D.Appointments, O => O.Ignore())
             .ForMember(D => D.Reminders, O => O.Ignore());
 

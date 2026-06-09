@@ -8,8 +8,8 @@ public interface IPatientService
     // Single patient by their PatientID (flat)
     Task<PatientDto?> GetByIdAsync(int PatientId);
 
-    // Single patient with MedicalHistory + Appointments included
-    Task<PatientDetailDto?> GetDetailsAsync(int PatientId);
+    //// Single patient with Appointments included
+    //Task<PatientDetailDto?> GetDetailsAsync(int PatientId);
 
     // Full-text search on patient full name
     Task<IEnumerable<PatientDto>> SearchByNameAsync(string Name);

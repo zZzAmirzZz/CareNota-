@@ -8,25 +8,19 @@ public class PatientDto
     public string FullName { get; set; } = string.Empty;  // FirstName + LastName from ApplicationUser
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
-    public string Gender { get; set; } = string.Empty;
-    public string BloodType { get; set; } = string.Empty;
-    public string Allergies { get; set; } = string.Empty;
-    public string InsuranceInfo { get; set; } = string.Empty;
-    public int Age { get; set; }                  // Calculated from DateOfBirth
+    public string? Gender { get; set; }
+    public string? BloodType { get; set; }
+    public string? Allergies { get; set; }
+    public string? InsuranceInfo { get; set; }
+    public string? ChronicConditions { get; set; }
+    public int? Age { get; set; }                   // Calculated from DateOfBirth
 }
 
 public class PatientDetailDto : PatientDto
 {
-    public MedicalHistorySummaryDto? MedicalHistory { get; set; }
     public IList<AppointmentSummaryDto> Appointments { get; set; } = [];
 }
 
-public class MedicalHistorySummaryDto
-{
-    public string ChiefComplaint { get; set; } = string.Empty;
-    public string PresentIllness { get; set; } = string.Empty;
-    public string PastMedicalHistory { get; set; } = string.Empty;
-}
 
 public class AppointmentSummaryDto
 {

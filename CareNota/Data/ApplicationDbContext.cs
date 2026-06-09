@@ -16,7 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Receptionist> Receptionists { get; set; }
     public DbSet<Admin> Admins { get; set; }
     public DbSet<AudioRecord> AudioRecords { get; set; }
-    public DbSet<MedicalHistory> MedicalHistories { get; set; }
+    
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Visit> Visits { get; set; }
     public DbSet<Prescription> Prescriptions { get; set; }
@@ -61,12 +61,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey<Receptionist>(R => R.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ── Patient → MedicalHistory (1-to-1) ─────────────────────────────────
-        Builder.Entity<MedicalHistory>()
-            .HasOne(M => M.Patient)
-            .WithOne(P => P.MedicalHistory)
-            .HasForeignKey<MedicalHistory>(M => M.PatientId)
-            .OnDelete(DeleteBehavior.Cascade);
 
         // ── Patient → Appointment (1-to-M) ────────────────────────────────────
         Builder.Entity<Appointment>()

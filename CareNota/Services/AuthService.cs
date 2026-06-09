@@ -19,7 +19,6 @@ public class AuthService(
 {
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto Dto)
     {
-        // Check duplicate email
         if (await UserManager.FindByEmailAsync(Dto.Email) is not null)
             throw new InvalidOperationException("Email is already registered.");
 
@@ -29,7 +28,7 @@ public class AuthService(
             Email = Dto.Email,
             UserName = Dto.Email,
             PhoneNumber = Dto.PhoneNumber,
-            Gender = Dto.Gender
+            Gender = Dto.Gender  // kept on ApplicationUser if you store it there too
         };
 
         var CreateResult = await UserManager.CreateAsync(User, Dto.Password);
@@ -39,12 +38,14 @@ public class AuthService(
             throw new InvalidOperationException(Errors);
         }
 
-        // Always patient — no role field accepted from outside
         await UserManager.AddToRoleAsync(User, RoleSeeder.Patient);
-        await CreateRoleProfileAsync(User.Id, RoleSeeder.Patient);
+
+        // ✅ Pass the full Dto so patient profile is populated on registration
+        await CreateRoleProfileAsync(User.Id, RoleSeeder.Patient, Dto);
 
         return await BuildAuthResponseAsync(User);
     }
+
     public async Task<AuthResponseDto> LoginAsync(LoginDto Dto)
     {
         var User = await UserManager.FindByEmailAsync(Dto.Email)
@@ -92,7 +93,6 @@ public class AuthService(
         var NewRefreshToken = GenerateRefreshToken();
 
         User.RefreshToken = NewRefreshToken;
-
         User.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(
             int.Parse(Configuration["Jwt:RefreshTokenExpiryDays"]!));
 
@@ -102,46 +102,37 @@ public class AuthService(
         {
             AccessToken = AccessToken,
             RefreshToken = NewRefreshToken,
-
             AccessTokenExpiry = DateTime.UtcNow.AddMinutes(
                 int.Parse(Configuration["Jwt:ExpiryMinutes"]!)),
-
             UserId = User.Id,
             Email = User.Email!,
             FullName = User.FullName,
-
             Roles = Roles
         };
 
-        // Get integer profile ID based on role
         if (Roles.Contains(RoleSeeder.Doctor))
         {
             var Doctor = await Context.Doctors
-                .FirstOrDefaultAsync(d => d.UserId == User.Id);
-
+                .FirstOrDefaultAsync(D => D.UserId == User.Id);
             Response.DoctorId = Doctor?.DoctorID;
         }
-
         else if (Roles.Contains(RoleSeeder.Patient))
         {
             var Patient = await Context.Patients
-                .FirstOrDefaultAsync(p => p.UserId == User.Id);
-
+                .FirstOrDefaultAsync(P => P.UserId == User.Id);
             Response.PatientId = Patient?.PatientID;
         }
-
         else if (Roles.Contains(RoleSeeder.Receptionist))
         {
             var Receptionist = await Context.Receptionists
-                .FirstOrDefaultAsync(r => r.UserId == User.Id);
-
+                .FirstOrDefaultAsync(R => R.UserId == User.Id);
             Response.ReceptionistId = Receptionist?.ReceptionistID;
         }
         else if (Roles.Contains(RoleSeeder.Admin))
         {
-            // Admin has no separate profile table — UserId IS the admin identifier
             Response.AdminId = User.Id;
         }
+
         return Response;
     }
 
@@ -157,8 +148,7 @@ public class AuthService(
 
         Claims.AddRange(Roles.Select(R => new Claim(ClaimTypes.Role, R)));
 
-        var Key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(Configuration["Jwt:Key"]!));
+        var Key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["Jwt:Key"]!));
         var Credentials = new SigningCredentials(Key, SecurityAlgorithms.HmacSha256);
 
         var Token = new JwtSecurityToken(
@@ -204,20 +194,33 @@ public class AuthService(
         return Principal;
     }
 
-    private async Task CreateRoleProfileAsync(string UserId, string Role)
+    // ✅ Dto parameter added — null-safe so Doctor/Receptionist calls are unaffected
+    private async Task CreateRoleProfileAsync(string UserId, string Role, RegisterDto? Dto = null)
     {
         switch (Role)
         {
             case "Doctor":
                 Context.Doctors.Add(new Doctor { UserId = UserId });
                 break;
+
             case "Patient":
-                Context.Patients.Add(new Patient { UserId = UserId });
+                Context.Patients.Add(new Patient
+                {
+                    UserId = UserId,
+                    Gender = Dto?.Gender,
+                    DateOfBirth = Dto?.DateOfBirth,
+                    BloodType = Dto?.BloodType,
+                    Allergies = Dto?.Allergies,
+                    InsuranceInfo = Dto?.InsuranceInfo,
+                    ChronicConditions = Dto?.ChronicConditions
+                });
                 break;
+
             case "Receptionist":
                 Context.Receptionists.Add(new Receptionist { UserId = UserId });
                 break;
         }
+
         await Context.SaveChangesAsync();
     }
 }

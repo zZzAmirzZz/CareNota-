@@ -12,11 +12,7 @@ public class PatientRepository : GenericRepository<Patient>, IPatientRepository
               .Include(p => p.User)
               .FirstOrDefaultAsync(p => p.UserId == userId);
 
-    public async Task<Patient?> GetWithMedicalHistoryAsync(int patientId)
-        => await DbSet
-            .Include(p => p.User)
-            .Include(p => p.MedicalHistory)
-            .FirstOrDefaultAsync(p => p.PatientID == patientId);
+  
     public async Task<Patient?> GetWithAppointmentsAsync(int patientId)
             => await DbSet
                 .Include(p => p.User)
@@ -47,4 +43,10 @@ public class PatientRepository : GenericRepository<Patient>, IPatientRepository
         => await DbSet
             .Include(p => p.User)
             .FirstOrDefaultAsync(p => p.PatientID == patientId);
+
+    public async Task<Patient?> GetPatientByVisitIdAsync(int VisitId)
+    => await DbSet
+        .Include(P => P.User)
+        .FirstOrDefaultAsync(P =>
+            P.Appointments.Any(A => A.Visit != null && A.Visit.VisitID == VisitId));
 }

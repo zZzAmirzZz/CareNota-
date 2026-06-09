@@ -23,4 +23,14 @@ public class AISummaryRepository : IAISummaryRepository
 
     public async Task SaveAsync()
         => await _Context.SaveChangesAsync();
+    public async Task<AISummary?> GetLastApprovedDoctorSummaryByPatientAsync(
+    int PatientId, int ExcludeVisitId)
+    => await _Context.AISummaries
+        .Where(S =>
+            S.SummaryType == "Doctor" &&
+            S.VisitID != ExcludeVisitId &&
+            S.Visit.Appointment.PatientID == PatientId &&
+            S.Visit.Subjective != null)   // Subjective != null = approved
+        .OrderByDescending(S => S.Visit.VisitDate)
+        .FirstOrDefaultAsync();
 }

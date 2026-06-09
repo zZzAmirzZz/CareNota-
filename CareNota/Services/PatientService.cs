@@ -30,12 +30,12 @@ public class PatientService : IPatientService
         return Patient is null ? null : _Mapper.Map<PatientDto>(Patient);
     }
 
-    public async Task<PatientDetailDto?> GetDetailsAsync(int PatientId)
-    {
-        // Uses GetWithMedicalHistoryAsync so navigation properties are already loaded
-        var Patient = await _PatientRepo.GetWithMedicalHistoryAsync(PatientId);
-        return Patient is null ? null : _Mapper.Map<PatientDetailDto>(Patient);
-    }
+    //public async Task<PatientDetailDto?> GetDetailsAsync(int PatientId)
+    //{
+    //    // Uses GetWithMedicalHistoryAsync so navigation properties are already loaded
+    //    var Patient = await _PatientRepo.GetWithMedicalHistoryAsync(PatientId);
+    //    return Patient is null ? null : _Mapper.Map<PatientDetailDto>(Patient);
+    //}
 
     public async Task<IEnumerable<PatientDto>> SearchByNameAsync(string Name)
     {
@@ -50,13 +50,12 @@ public class PatientService : IPatientService
         var Patient = await _PatientRepo.GetByIdAsync(PatientId)
             ?? throw new KeyNotFoundException($"Patient {PatientId} not found.");
 
-        // AutoMapper updates only the mapped fields; ignores UserId, nav props, etc.
         _Mapper.Map(Dto, Patient);
         _PatientRepo.Update(Patient);
         await _PatientRepo.SaveChangesAsync();
 
-        // Re-fetch with User navigation so FullName/Email are available for the response
-        var Updated = await _PatientRepo.GetWithMedicalHistoryAsync(PatientId);
+        // ✅ GetByIdAsync already includes User navigation — no MedicalHistory needed
+        var Updated = await _PatientRepo.GetByIdAsync(PatientId);
         return _Mapper.Map<PatientDto>(Updated!);
     }
 
