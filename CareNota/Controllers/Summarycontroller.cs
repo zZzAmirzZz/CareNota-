@@ -17,7 +17,7 @@ public class SummaryController : ControllerBase
     // ── GET /api/visits/{visitId}/summary ────────────────────────────────────
     // Doctor reviews AI draft. Returns 404 while AI still processing (poll until 200).
     [HttpGet("summary")]
-    //[Authorize(Roles = "Doctor")]
+    [Authorize(Roles = "Doctor")]
     [ProducesResponseType(typeof(VisitSummaryResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSummary([FromRoute] int VisitId)
@@ -38,7 +38,7 @@ public class SummaryController : ControllerBase
     // Editable: subjective, objective, assessment, plan (SOAP)
     //           diagnosis, symptoms, treatmentPlan, whenToSeekHelp (patient Arabic)
     [HttpPut("summary")]
-    //[Authorize(Roles = "Doctor")]
+    [Authorize(Roles = "Doctor")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> EditSummary(
@@ -64,7 +64,7 @@ public class SummaryController : ControllerBase
     //   4. Diagnosis → Diagnosis table row
     //   5. TreatmentPlan → Prescription.Instructions (created if needed)
     [HttpPost("summary/approve")]
-    //[Authorize(Roles = "Doctor")]
+    [Authorize(Roles = "Doctor")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ApproveSummary(int VisitId)
@@ -82,7 +82,7 @@ public class SummaryController : ControllerBase
     // Patient reads their Arabic summary — only after doctor approves.
     // Returns 400 if not yet approved.
     [HttpGet("patient-summary")]
-    //[Authorize(Roles = "Patient,Doctor")]
+    [Authorize(Roles = "Patient,Doctor")]
     [ProducesResponseType(typeof(PatientSummaryViewDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -101,7 +101,7 @@ public class SummaryController : ControllerBase
     // Optional — doctor rates AI summary quality (1–5) with optional feedback.
     // Used for future model improvement. Can be called any time after generation.
     [HttpPost("summary/rating")]
-    //[Authorize(Roles = "Doctor")]
+    [Authorize(Roles = "Doctor")]
     [ProducesResponseType(typeof(RateSummaryResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RateSummary(

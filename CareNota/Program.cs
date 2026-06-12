@@ -1,5 +1,6 @@
 using Azure.Storage.Blobs;
 using CareNota.API.BackgroundJobs;
+using CareNota.BackgroundJobs;
 using CareNota.BLL.Validators;
 using CareNota.Data;
 using CareNota.DTOs.Audio;
@@ -131,6 +132,17 @@ Builder.Services.Configure<EmailSettings>(
 Builder.Configuration.GetSection("EmailSettings"));
 Builder.Services.AddScoped<IEmailService, EmailService>();
 Builder.Services.AddScoped<IReminderService, ReminderService>();
+
+// ── Background task queue (singleton — shared between HTTP and worker) ────
+Builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>(
+    _ => new BackgroundTaskQueue(Capacity: 500));
+
+// ── Hosted worker that drains the queue (singleton by nature of IHostedService) ─
+Builder.Services.AddHostedService<AIBackgroundWorker>();
+
+// ── AIService must remain scoped (it uses scoped repositories / DbContext) ──
+// If it was already registered as scoped, no change needed here.
+// builder.Services.AddScoped<IAIService, AIService>();  // already registered
 // ── FluentValidation ─────────────────────────────────────────────────────────
 
 Builder.Services.AddAutoMapper(typeof(MappingProfile));

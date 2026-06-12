@@ -346,7 +346,7 @@ public class UpdateVisitValidator : AbstractValidator<UpdateVisitDto>
             .When(x => x.WhenToSeekHelp is not null);
 
         RuleFor(x => x.FollowUp)
-     .NotEmpty().WithMessage("Follow up is required.")
+     //.NotEmpty().WithMessage("Follow up is required.")
      .MaximumLength(500).WithMessage("Follow up cannot exceed 500 characters.");
     }
 }

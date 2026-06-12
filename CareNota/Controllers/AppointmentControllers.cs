@@ -28,7 +28,7 @@ public class AppointmentController : ControllerBase
     // ── READ ENDPOINTS ─────────────────────────────────────────────────────
 
     [HttpGet]
-    //[Authorize]                                   // Any authenticated user
+    [Authorize]                                   // Any authenticated user
     public async Task<IActionResult> GetAll()
     {
         var data = await _appointmentService.GetAllAsync();
@@ -36,7 +36,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    //[Authorize]
+    [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
         var data = await _appointmentService.GetByIdAsync(id);
@@ -44,7 +44,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("{id}/details")]
-    //[Authorize]
+    [Authorize]
     public async Task<IActionResult> GetDetails(int id)
     {
         var data = await _appointmentService.GetDetailsAsync(id);
@@ -52,7 +52,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("patient/{patientId}")]
-    //[Authorize(Roles = "Patient,Doctor,Receptionist,Admin")]
+    [Authorize(Roles = "Patient,Doctor,Receptionist,Admin")]
     public async Task<IActionResult> GetByPatient(int patientId)
     {
         var data = await _appointmentService.GetByPatientIdAsync(patientId);
@@ -60,7 +60,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("doctor/{doctorId}")]
-    //[Authorize(Roles = "Doctor,Receptionist,Admin")]
+    [Authorize(Roles = "Doctor,Receptionist,Admin")]
     public async Task<IActionResult> GetByDoctor(int doctorId)
     {
         var data = await _appointmentService.GetByDoctorIdAsync(doctorId);
@@ -69,7 +69,7 @@ public class AppointmentController : ControllerBase
 
     // ── Get By Status ────────────────────────────
     [HttpGet("status/{status}")]
-    //[Authorize(Roles = "Receptionist,Admin,Doctor")]
+    [Authorize(Roles = "Receptionist,Admin,Doctor")]
     public async Task<IActionResult> GetByStatus(string status)
     {
         if (!Enum.TryParse<AppointmentStatus>(status, true, out var appointmentStatus))
@@ -82,7 +82,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("date-range")]
-    //[Authorize(Roles = "Receptionist,Admin,Doctor")]
+    [Authorize(Roles = "Receptionist,Admin,Doctor")]
     public async Task<IActionResult> GetByDateRange([FromQuery] DateTime from, [FromQuery] DateTime to)
     {
         try
@@ -97,7 +97,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("doctor/{doctorId}/weekly")]
-    //[Authorize(Roles = "Doctor,Receptionist,Admin")]
+    [Authorize(Roles = "Doctor,Receptionist,Admin")]
     public async Task<IActionResult> GetWeeklySchedule(int doctorId, [FromQuery] DateTime startOfWeek)
     {
         var data = await _appointmentService.GetDoctorWeeklyScheduleAsync(doctorId, startOfWeek);
@@ -115,7 +115,7 @@ public class AppointmentController : ControllerBase
     // ── WRITE ENDPOINTS ────────────────────────────────────────────────────
 
     [HttpPost]
-    //[Authorize(Roles = "Receptionist")]        // Usually only Receptionist/Admin can create
+    [Authorize(Roles = "Receptionist")]        // Usually only Receptionist/Admin can create
     public async Task<IActionResult> Create([FromBody] CreateAppointmentDto dto)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
@@ -142,7 +142,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    //[Authorize(Roles = "Receptionist,Admin,Doctor")]
+    [Authorize(Roles = "Receptionist,Admin,Doctor")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateAppointmentDto dto)
     {
         var validationResult = await _updateValidator.ValidateAsync(dto);
@@ -165,7 +165,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpPut("{id}/cancel")]
-    //[Authorize(Roles = "Receptionist,Admin")]
+    [Authorize(Roles = "Receptionist,Admin")]
     public async Task<IActionResult> Cancel(int id)
     {
         try
@@ -184,7 +184,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    //[Authorize(Roles = "Admin")]        // Only Admin should hard delete
+    [Authorize(Roles = "Admin")]        // Only Admin should hard delete
     public async Task<IActionResult> Delete(int id)
     {
         try

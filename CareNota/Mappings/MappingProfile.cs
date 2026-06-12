@@ -195,6 +195,13 @@ S.Visit.Appointment.Patient != null
             .ForMember(D => D.PrescriptionMedications, O => O.Ignore())
             .ForMember(D => D.Reminders, O => O.Ignore());
 
+        // ── Diagnosis → DiagnosisSummaryDto (used inside VisitDetailDto) ─────────────
+        CreateMap<Diagnosis, DiagnosisSummaryDto>();
+
+        // ── Prescription → PrescriptionSummaryDto (used inside VisitDetailDto) ──────
+        CreateMap<Prescription, PrescriptionSummaryDto>()
+            .ForMember(D => D.Medications,
+                O => O.MapFrom(S => S.PrescriptionMedications));
         // ── PrescriptionMedication ─────────────────────────
         CreateMap<PrescriptionMedication, PrescriptionMedicationDetailDto>()
             .ForMember(D => D.MedicationName,
