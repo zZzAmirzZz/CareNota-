@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CareNota.DTOs.Doctor;
 using CareNota.Services.Interfaces;
-using CareNota.DTOs.Doctor;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class DoctorController : ControllerBase
 {
     private readonly IDoctorService _service;

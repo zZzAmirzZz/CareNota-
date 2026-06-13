@@ -1,6 +1,7 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Azure.Storage.Sas;                    // ← NEW
+using Azure.Storage.Sas;
+using CareNota.BackgroundJobs;          
 using CareNota.DTOs.Audio;
 using CareNota.Interfaces;
 using CareNota.Models;
@@ -14,95 +15,89 @@ namespace CareNota.Services;
 
 public class AudioService : IAudioService
 {
-    private readonly BlobServiceClient _blobServiceClient;
-    private readonly IAudioRepository _audioRepository;
-    private readonly IAIService _aiService;
-    private readonly IValidator<AudioUploadDto> _validator;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<AudioService> _logger;
+    private readonly BlobServiceClient _BlobServiceClient;
+    private readonly IAudioRepository _AudioRepository;
+    private readonly IBackgroundTaskQueue _TaskQueue;       
+    private readonly IValidator<AudioUploadDto> _Validator;
+    private readonly IConfiguration _Configuration;
+    private readonly ILogger<AudioService> _Logger;
 
     public AudioService(
-        BlobServiceClient blobServiceClient,
-        IAudioRepository audioRepository,
-        IAIService aiService,
-        IValidator<AudioUploadDto> validator,
-        IConfiguration configuration,
-        ILogger<AudioService> logger)
+        BlobServiceClient BlobServiceClient,
+        IAudioRepository AudioRepository,
+        IBackgroundTaskQueue TaskQueue,                     // ← replaces IAIService
+        IValidator<AudioUploadDto> Validator,
+        IConfiguration Configuration,
+        ILogger<AudioService> Logger)
     {
-        _blobServiceClient = blobServiceClient;
-        _audioRepository = audioRepository;
-        _aiService = aiService;
-        _validator = validator;
-        _configuration = configuration;
-        _logger = logger;
+        _BlobServiceClient = BlobServiceClient;
+        _AudioRepository = AudioRepository;
+        _TaskQueue = TaskQueue;
+        _Validator = Validator;
+        _Configuration = Configuration;
+        _Logger = Logger;
     }
 
-    public async Task<AudioRecordResponseDto> UploadAudioAsync(IFormFile file, int visitId)
+    public async Task<AudioRecordResponseDto> UploadAudioAsync(IFormFile File, int VisitId)
     {
         // ── Validate ──────────────────────────────────────────────────────────
-        var dto = new AudioUploadDto { AudioFile = file, VisitId = visitId };
-        var validationResult = await _validator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-            throw new ValidationException(string.Join("; ", validationResult.Errors));
+        var Dto = new AudioUploadDto { AudioFile = File, VisitId = VisitId };
+        var ValidationResult = await _Validator.ValidateAsync(Dto);
+        if (!ValidationResult.IsValid)
+            throw new ValidationException(string.Join("; ", ValidationResult.Errors));
 
         // ── Upload to Azure Blob (private container) ──────────────────────────
-        var containerName = _configuration["AzureBlob:ContainerName"] ?? "audio-files";
-        var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
-        await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+        var ContainerName = _Configuration["AzureBlob:ContainerName"] ?? "audio-files";
+        var ContainerClient = _BlobServiceClient.GetBlobContainerClient(ContainerName);
+        await ContainerClient.CreateIfNotExistsAsync(PublicAccessType.None);
 
-        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var blobName = $"visits/{visitId}/{Guid.NewGuid()}{extension}";
-        var blobClient = containerClient.GetBlobClient(blobName);
+        var Extension = Path.GetExtension(File.FileName).ToLowerInvariant();
+        var BlobName = $"visits/{VisitId}/{Guid.NewGuid()}{Extension}";
+        var BlobClient = ContainerClient.GetBlobClient(BlobName);
 
-        await using var stream = file.OpenReadStream();
-        await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = file.ContentType });
+        await using var Stream = File.OpenReadStream();
+        await BlobClient.UploadAsync(Stream, new BlobHttpHeaders { ContentType = File.ContentType });
 
-        // Plain URL — stored in DB and used by the cleanup job
-        var audioUrl = blobClient.Uri.ToString();
+        var AudioUrl = BlobClient.Uri.ToString();
 
         // ── Generate SAS URL for FastAPI ──────────────────────────────────────
-        // Container is private so FastAPI cannot access the plain URL.
-        // SAS URL is read-only and time-limited — never stored in the DB.
-        var sasExpiryHours = _configuration.GetValue<int>("AudioSettings:SasExpiryHours", 2);
-        var sasBuilder = new BlobSasBuilder
+        var SasExpiryHours = _Configuration.GetValue<int>("AudioSettings:SasExpiryHours", 2);
+        var SasBuilder = new BlobSasBuilder
         {
-            BlobContainerName = blobClient.BlobContainerName,
-            BlobName = blobClient.Name,
+            BlobContainerName = BlobClient.BlobContainerName,
+            BlobName = BlobClient.Name,
             Resource = "b",
-            ExpiresOn = DateTimeOffset.UtcNow.AddHours(sasExpiryHours)
+            ExpiresOn = DateTimeOffset.UtcNow.AddHours(SasExpiryHours)
         };
-        sasBuilder.SetPermissions(BlobSasPermissions.Read);
-        var sasUrl = blobClient.GenerateSasUri(sasBuilder).ToString();
-        _logger.LogInformation("SAS URL generated: {SasUrl}", sasUrl);
+        SasBuilder.SetPermissions(BlobSasPermissions.Read);
+        var SasUrl = BlobClient.GenerateSasUri(SasBuilder).ToString();
 
         // ── Save AudioRecord (plain URL — no SAS token in DB) ─────────────────
-        var deletionHours = _configuration.GetValue<int>("AudioSettings:DeletionDelayHours", 1);
-        var audioRecord = new AudioRecord
+        var DeletionHours = _Configuration.GetValue<int>("AudioSettings:DeletionDelayHours", 1);
+        var AudioRecord = new AudioRecord
         {
-            AudioFileURL = audioUrl,   // plain URL
-            VisitID = visitId,
+            AudioFileURL = AudioUrl,
+            VisitID = VisitId,
             CreatedAt = DateTime.UtcNow,
-            DeletionAt = DateTime.UtcNow.AddHours(deletionHours)
+            DeletionAt = DateTime.UtcNow.AddHours(DeletionHours)
         };
 
-        await _audioRepository.AddAsync(audioRecord);
-        await _audioRepository.SaveAsync();
+        await _AudioRepository.AddAsync(AudioRecord);
+        await _AudioRepository.SaveAsync();
 
-        // ── Fire AI with SAS URL (non-blocking) ───────────────────────────────
-        _ = Task.Run(async () =>
-        {
-            try { await _aiService.ProcessAudioAsync(sasUrl, visitId); }  // ← sasUrl not audioUrl
-            catch (Exception ex) { _logger.LogError(ex, "AI processing failed for Visit {VisitId}", visitId); }
-        });
+        // ── Enqueue AI job (safe — no Task.Run, no scope leak) ────────────────
+        _TaskQueue.EnqueueAIJob(SasUrl, VisitId);
+        _Logger.LogInformation(
+            "[AudioService] AI job enqueued — VisitId={VisitId}", VisitId);
 
         return new AudioRecordResponseDto
         {
-            AudioId = audioRecord.AudioID,
-            AudioFileUrl = audioUrl,   // return plain URL to frontend
-            CreatedAt = audioRecord.CreatedAt,
-            DeletionAt = audioRecord.DeletionAt,
-            VisitId = visitId,
-            Message = "Audio uploaded successfully. AI processing started."
+            AudioId = AudioRecord.AudioID,
+            AudioFileUrl = AudioUrl,
+            CreatedAt = AudioRecord.CreatedAt,
+            DeletionAt = AudioRecord.DeletionAt,
+            VisitId = VisitId,
+            Message = "Audio uploaded successfully. AI processing queued."
         };
     }
 }

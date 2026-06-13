@@ -7,7 +7,7 @@ namespace CareNota.Controllers;
 
 [ApiController]
 [Route("api/audio")]
-//[Authorize]
+[Authorize]
 public class AudioController : ControllerBase
 {
     private readonly IAudioService _audioService;
@@ -18,7 +18,7 @@ public class AudioController : ControllerBase
     }
 
     [HttpPost("upload")]
-    //[Authorize(Roles = "Doctor")]
+    [Authorize(Roles = "Doctor")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(AudioRecordResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -51,7 +51,7 @@ public class AudioController : ControllerBase
         }
     }
     [HttpGet("{visitId:int}/status")]
-    //[Authorize(Roles = "Doctor")]
+    [Authorize(Roles = "Doctor")]
     public IActionResult GetStatus([FromRoute] int visitId)
     {
         return Ok(new

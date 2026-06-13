@@ -89,6 +89,9 @@ public class AIService : IAIService
             }
         }
 
+
+
+
         // ── 5. Build the request payload ──────────────────────────────────────
         var RequestPayload = new
         {
@@ -99,6 +102,12 @@ public class AIService : IAIService
             allergies = Patient?.Allergies,
             last_summary = LastSummary   // null if first visit
         };
+        var jsonPayload = JsonSerializer.Serialize(RequestPayload);
+
+        _Logger.LogInformation(
+            "AI Request Payload: {Payload}",
+            jsonPayload);
+
 
         var Content = new StringContent(
             JsonSerializer.Serialize(RequestPayload),
