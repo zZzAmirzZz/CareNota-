@@ -202,6 +202,13 @@ Builder.Services.AddAuthentication(options =>
 // ── Build App ───────────────────────────────────────────────────────────────
 var App = Builder.Build();
 App.UseStaticFiles();
+
+using (var scope = App.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate(); // applies any pending migrations automatically
+}
+
 // admin 
 // ====================== DATA SEEDING ======================
 // Program.cs — seeding block
@@ -278,7 +285,6 @@ RecurringJob.AddOrUpdate<IReminderService>(
 
     App.UseSwagger();
     App.UseSwaggerUI();
-
 
 
 App.Run();
