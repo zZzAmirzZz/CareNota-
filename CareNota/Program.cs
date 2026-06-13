@@ -263,11 +263,11 @@ RecurringJob.AddOrUpdate<IReminderService>(
     x => x.SendMedicationRemindersAsync(),
     Cron.Hourly); 
 
-if (App.Environment.IsDevelopment())
-{
+
     App.UseSwagger();
     App.UseSwaggerUI();
-}
+
+
 
 App.Run();
 
