@@ -203,11 +203,6 @@ Builder.Services.AddAuthentication(options =>
 var App = Builder.Build();
 App.UseStaticFiles();
 
-using (var scope = App.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate(); // applies any pending migrations automatically
-}
 
 // admin 
 // ====================== DATA SEEDING ======================
