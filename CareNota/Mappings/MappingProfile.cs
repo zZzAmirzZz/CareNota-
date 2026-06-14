@@ -90,7 +90,7 @@ public class MappingProfile : Profile
             //  navigation
             .ForMember(d => d.Patient, opt => opt.Ignore())
             .ForMember(d => d.Receptionist, opt => opt.Ignore())
-            .ForMember(d => d.Doctor, opt => opt.Ignore()) // 🔥 NEW
+            .ForMember(d => d.Doctor, opt => opt.Ignore()) 
             .ForMember(d => d.Visit, opt => opt.Ignore())
             .ForMember(d => d.Reminders, opt => opt.Ignore());
 

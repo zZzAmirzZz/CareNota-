@@ -31,10 +31,13 @@ public class VisitSummaryDto
 {
     public int VisitID { get; set; }
     public DateTime VisitDate { get; set; }
-    public string Assessment { get; set; } = string.Empty;
-    public string Plan { get; set; } = string.Empty;
-}
+    public string AppointmentType { get; set; } = string.Empty;
 
+    public string DoctorName { get; set; } = string.Empty;
+    public string Specialty { get; set; } = string.Empty;
+
+    public string SummaryText { get; set; } = string.Empty;
+}
 // ── Write ─────────────────────────────────────────────────────────────────────
 
 public class CreateAppointmentDto
