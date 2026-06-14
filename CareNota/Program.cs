@@ -202,6 +202,8 @@ Builder.Services.AddAuthentication(options =>
 // ── Build App ───────────────────────────────────────────────────────────────
 var App = Builder.Build();
 App.UseStaticFiles();
+
+
 // admin 
 // ====================== DATA SEEDING ======================
 // Program.cs — seeding block
@@ -275,11 +277,10 @@ RecurringJob.AddOrUpdate<IReminderService>(
     x => x.SendMedicationRemindersAsync(),
     Cron.Hourly); 
 
-if (App.Environment.IsDevelopment())
-{
+
     App.UseSwagger();
     App.UseSwaggerUI();
-}
+
 
 App.Run();
 

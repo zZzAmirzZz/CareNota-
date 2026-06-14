@@ -17,6 +17,7 @@ public class DoctorRepository : GenericRepository<Doctor>, IDoctorRepository
     public async Task<IEnumerable<Doctor>> GetBySpecialtyAsync(string specialty)
     {
         return await _context.Doctors
+            .Include(d => d.User)
                              .Where(d => d.Specialty == specialty)
                              .ToListAsync();
     }
