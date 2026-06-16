@@ -28,7 +28,7 @@ public class AppointmentController : ControllerBase
     // ── READ ENDPOINTS ─────────────────────────────────────────────────────
 
     [HttpGet]
-    [Authorize]                                   // Any authenticated user
+    //[Authorize]                                   // Any authenticated user
     public async Task<IActionResult> GetAll()
     {
         var data = await _appointmentService.GetAllAsync();
@@ -44,7 +44,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("{id}/details")]
-    [Authorize]
+    //[Authorize]
     public async Task<IActionResult> GetDetails(int id)
     {
         var data = await _appointmentService.GetDetailsAsync(id);
@@ -52,7 +52,7 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("patient/{patientId}")]
-    [Authorize(Roles = "Patient,Doctor,Receptionist,Admin")]
+    //[Authorize(Roles = "Patient,Doctor,Receptionist,Admin")]
     public async Task<IActionResult> GetByPatient(int patientId)
     {
         var data = await _appointmentService.GetByPatientIdAsync(patientId);
