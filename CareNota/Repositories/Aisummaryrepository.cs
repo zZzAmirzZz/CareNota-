@@ -15,9 +15,10 @@ public class AISummaryRepository : IAISummaryRepository
     }
 
     public async Task<AISummary?> GetByVisitAndTypeAsync(int VisitId, string SummaryType)
-        => await _Context.AISummaries
-            .FirstOrDefaultAsync(s => s.VisitID == VisitId && s.SummaryType == SummaryType);
-
+    => await _Context.AISummaries
+        .Where(s => s.VisitID == VisitId && s.SummaryType == SummaryType)
+        .OrderByDescending(s => s.AISummaryID)
+        .FirstOrDefaultAsync();
     public async Task AddAsync(AISummary Summary)
         => await _Context.AISummaries.AddAsync(Summary);
 

@@ -101,6 +101,7 @@ public class VisitController : ControllerBase
         }
         catch (KeyNotFoundException Ex) { return NotFound(new { Ex.Message }); }
     }
+
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

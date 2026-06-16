@@ -177,7 +177,8 @@ Builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         policy => policy
-           . WithOrigins("http://localhost:4200")
+           . WithOrigins("http://localhost:4200",
+           "https://carenota-frontend-bnceh7czbfdkctd4.polandcentral-01.azurewebsites.net/")
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
